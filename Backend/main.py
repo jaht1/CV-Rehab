@@ -24,24 +24,17 @@ logging.basicConfig(filename='app.log', level=logging.INFO)
 logging.error("An error occurred")
 
 # TODO: make a permanent CORS-error fix - this works temporarily
-# add logger=True, engineio_logger=True to see issues in more detail
-#socketio = SocketIO(app, cors_allowed_origins=["http://127.0.0.1:5000", "http://127.0.0.1:3000"])
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to your frontend origin
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-    
-# https://stackoverflow.com/questions/58931854/how-to-stream-live-video-frames-from-client-to-flask-server-and-back-to-the-clie
-
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
-    # Avoid padding error with '====' - Python will ignore extra signs
     print(type(frame))
     nparr = np.frombuffer(frame, np.uint8)
     print('processing frame for analysis')
