@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <script src="/socket.io/socket.io.js" type="application/javascript"></script>
+    <title>CV Rehab</title>
+  </head>
+  <body>
+    <h1>CV Rehab</h1>
+    <h2>Left: Canvas output from stream</h2>
+    <h2>Right: Web cam stream</h2>
+    <div id="container">
+      <canvas id="canvasOutput"></canvas>
+      <video autoplay="true" id="videoElement"></video>
+    </div>
+    
+    <div class="video">
+      <img id="image" />
+    </div>
+
+    <div id="degreeOutput"></div>
+    <h2>Detection</h2>
+    <div><img id="frameOutput" src="" /></div>
+
+    <div id="container">
+      <canvas id="myCanvas"></canvas>
+      <video autoplay="true" id="videoElement"></video>
+    </div>
+  </body>
+  <script src="./script.js" type="application/javascript"></script>
+
+</html>
