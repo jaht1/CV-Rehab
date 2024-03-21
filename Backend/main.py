@@ -35,7 +35,6 @@ app.add_middleware(
 
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
-    print(type(frame))
     nparr = np.frombuffer(frame, np.uint8)
     print('processing frame for analysis')
     # Use OpenCV to read the image data as an array (decode)

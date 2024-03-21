@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
   socket.on("response_back", function (frame) {
     endTime = performance.now(); // End timing
 
-    console.log(`Response received in ${(endTime - startTime) / 1000} seconds`);
+    //console.log(`Response received in ${(endTime - startTime) / 1000} seconds`);
     displayProcessedFrame(frame);
     captureVideoFrame();
   });
