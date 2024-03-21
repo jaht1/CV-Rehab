@@ -18,29 +18,13 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-/* Access web camera from index.html */
-// Ask user permission
-if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then(function (stream) {
-      // Stream user's video
-      console.log("Got user permission for camera");
-      video.srcObject = stream;
-      video.play();
-    })
-    .catch(function (err0r) {
-      console.log(err0r);
-      console.log("Something went wrong!");
-    });
-}
+
 var startTime = null;
 var endTime = null;
 let video, canvas, context;
 const reader = new FileReader();
 const frameOutput = document.getElementById("frameOutput");
 
-const convertToBinary = (frameData) => {};
 
 const captureVideoFrame = () => {
   framerate = 10
@@ -81,7 +65,22 @@ document.addEventListener("DOMContentLoaded", (event) => {
   video = document.getElementById("videoElement");
   canvas = document.getElementById("canvasOutput");
   context = canvas.getContext("2d");
+  
+  
+  // Ask user permission for camera
+  navigator.mediaDevices
+  .getUserMedia({ video: true })
+  .then(function (stream) {
+    console.log("Got user permission for camera");
+    video.srcObject = stream;
+    video.play();
+  })
+  .catch(function (err0r) {
+    console.log(err0r);
+    console.log("Something went wrong!");
+  });
 
+  // When video data has loaded
   video.addEventListener("loadedmetadata", () => {
     // Set canvas dimensions once based on the video element
     canvas.width = video.clientWidth;
@@ -95,6 +94,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
     //console.log(`Response received in ${(endTime - startTime) / 1000} seconds`);
     displayProcessedFrame(frame);
+
+    // Capture frame after previous one
     captureVideoFrame();
   });
   socket.on("print_response", function (degreeStr) {
@@ -102,3 +103,4 @@ document.addEventListener("DOMContentLoaded", (event) => {
     document.getElementById("degreeOutput").innerHTML = degreeStr;
   });
 });
+

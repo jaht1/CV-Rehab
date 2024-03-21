@@ -1,3 +1,24 @@
 #canvasOutput {
     display:none;
 }
+body, html{
+    height: 100%;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+/*Hides webcam output*/
+#videoElement {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0; /* Make video fully transparent */
+    pointer-events: none; /* Prevents the video element from capturing mouse events */
+    z-index: -1; /* Place video behind other content */
+}
+
+#frameOutput {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
