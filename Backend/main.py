@@ -46,8 +46,6 @@ def process_frame_for_analysis(frame):
 
 @sio.on('process_frame')
 async def analysis(sid, frame):
-    print('session id: ', sid)
-    print("Blobberoni recived of type ", frame[:10])
     ''' Function that receives a frame from the client '''
     try:
         frame = process_frame_for_analysis(frame)
