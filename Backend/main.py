@@ -21,6 +21,7 @@ sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
 
 pcs = set()
+pc = RTCPeerConnection()
 relay = MediaRelay()
 
 
@@ -43,14 +44,24 @@ app.add_middleware(
 
 
 @sio.on('offer')
-def offer(sid, data):
+async def offer(sid, data):
+    ''' Function to establish a connection between client and server using WebRTC '''
     print('Session id in offer: ', sid)
-    offer = RTCSessionDescription(sdp=data["sdp"], type=data["type"])
-    #offer = RTCSessionDescription(sdp=data.sdp, type=data.type)
-    pc = RTCPeerConnection()
-    #pc_id = "PeerConnection(%s)" + sid
-    pcs.add(pc)
-    print('Offer: ', offer)
+    # Parsing offer data
+    sdp = data['sdp']
+    
+    offer = RTCSessionDescription(sdp=sdp, type=data["type"])
+    
+    # Set the remote description
+    await pc.setRemoteDescription(offer)
+    # Create an answer
+    answer = await pc.createAnswer()
+    
+    # Set the local description
+    await pc.setLocalDescription(answer)
+    
+    # Send the answer back to the client
+    await sio.emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type}, room=sid)
 
 
 def process_frame_for_analysis(frame):

@@ -26,7 +26,7 @@ socket.on("connect", function () {
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", (event) => {
   const streamOutput = document.getElementById("videoElement");
-
+  let pc;
   video = document.getElementById("videoElement");
   canvas = document.getElementById("canvasOutput");
   context = canvas.getContext("2d");
@@ -42,11 +42,11 @@ document.addEventListener("DOMContentLoaded", (event) => {
     })
     .then((stream) => {
       // create a peer connection
-      const pc = new RTCPeerConnection({
+      pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }], // Example STUN server
       });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-      
+
       // Handle ICE candidates
       // Potential network pathways to server
       pc.onicecandidate = (event) => {
@@ -58,27 +58,38 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
       // create offer
       // Describes the media capabilities of the client
-    pc.createOffer()
-    .then(offer => pc.setLocalDescription(offer))
+      pc.createOffer()
+        .then((offer) => pc.setLocalDescription(offer))
+        .then(() => {
+          // Send offer to server for frame processing
+          //sendToBackend({ offer: pc.localDescription });
+          // Send the offer to backend
+
+          sdp = pc.localDescription.sdp;
+          type = pc.localDescription.type;
+          //console.log('Sending to backend', sdp)
+          socket.emit("offer", { sdp: sdp, type: type });
+        });
+    });
+  socket.on("answer", function (data) { 
+    /**
+     * Function that receives offer back from server
+     * 
+     */
+    //console.log("Received answer from server!!!!", data);
+    const answer = new RTCSessionDescription(data);
+    pc.setRemoteDescription(answer)
     .then(() => {
-      // Send offer to server for frame processing
-      //sendToBackend({ offer: pc.localDescription });
-      // Send the offer to backend
-      
-      sdp = pc.localDescription.sdp
-      type = pc.localDescription.type
-      console.log('Sending to backend', sdp)
-      socket.emit('offer', { sdp: sdp, type: type });
+      console.log('Remote description set successfully!');
+    })
+    .catch((error) => {
+      console.error('Error setting remote description:', error);
     });
-    });
-  // Add the video stream to the peer connection
-  
+  });
 });
 
 function sendToBackend(data) {
-  // Implement this function to send data to your backend
-  // For example, using WebSocket or AJAX
-  console.log('send to backend function')
+  console.log("send to backend function");
 }
 /*video.addEventListener("loadedmetadata", () => {
     // Set canvas dimensions once based on the video element
