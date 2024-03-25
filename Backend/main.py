@@ -11,11 +11,18 @@ from app.rom_analysis import analyze_frame, rom_analysis
 import cv2
 import numpy as np
 
+#from aiohttp import web
+from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
+from aiortc.contrib.media import MediaRelay
 
 app = FastAPI()
 router = APIRouter()
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
+
+pcs = set()
+relay = MediaRelay()
+
 
 # Socketio serves under /
 app.mount('/', socket_app)
@@ -31,6 +38,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+
+
+@sio.on('offer')
+def offer(sid, data):
+    print('Session id in offer: ', sid)
+    offer = RTCSessionDescription(sdp=data["sdp"], type=data["type"])
+    #offer = RTCSessionDescription(sdp=data.sdp, type=data.type)
+    pc = RTCPeerConnection()
+    #pc_id = "PeerConnection(%s)" + sid
+    pcs.add(pc)
+    print('Offer: ', offer)
 
 
 def process_frame_for_analysis(frame):
@@ -55,6 +75,7 @@ async def analysis(sid, frame):
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
         raise
+
         
 @sio.on("connect")
 async def connect(sid, env):

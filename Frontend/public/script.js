@@ -1,5 +1,6 @@
 /* Initialize websocket connection to localhost server */
 // , { transports: ['websocket', 'polling']}
+
 const socket = io("http://localhost:5000");
 
 socket.on("connect_error", (err) => {
@@ -20,69 +21,66 @@ socket.on("connect", function () {
 
 /* Access web camera from index.html */
 // Ask user permission
-if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then(function (stream) {
-      // Stream user's video
-      console.log("Got user permission for camera");
-      video.srcObject = stream;
-      video.play();
-    })
-    .catch(function (err0r) {
-      console.log(err0r);
-      console.log("Something went wrong!");
-    });
-}
-var startTime = null;
-var endTime = null;
-let video, canvas, context;
-const reader = new FileReader();
-const frameOutput = document.getElementById("frameOutput");
-
-const convertToBinary = (frameData) => {};
-
-const captureVideoFrame = () => {
-  framerate = 10
-  context.drawImage(video, 0, 0, video.clientWidth, video.clientHeight);
-  canvas = document.getElementById("canvasOutput");
-  var imageArrayBuffer;
-  canvas.toBlob(function(blob) {
-    
-    reader.onloadend = function() {
-        imageArrayBuffer = reader.result;
-        socket.emit("process_frame", imageArrayBuffer);
-    };
-    reader.readAsArrayBuffer(blob);
-}, 'image/png');
-startTime = performance.now();
-  socket.emit("process_frame", imageArrayBuffer);
-  
-};
-
-// TODO: fix blob
-function displayProcessedFrame(frame) {
-  // Revoke the previous object URL to free up memory
-  if (frameOutput.src) {
-    URL.revokeObjectURL(frameOutput.src);
-  }
-  var blob = new Blob([frame], { type: "image/png" });
-  // Create an object URL for blob
-  var frameData = URL.createObjectURL(blob);
-
-  // Display blob
-  frameOutput.src = frameData;
-  
-}
 
 /* Video frame processing */
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", (event) => {
+  const streamOutput = document.getElementById("videoElement");
+
   video = document.getElementById("videoElement");
   canvas = document.getElementById("canvasOutput");
   context = canvas.getContext("2d");
 
-  video.addEventListener("loadedmetadata", () => {
+  // Access user's webcam
+  navigator.mediaDevices
+    .getUserMedia({ video: true })
+    .then((stream) => {
+      // Stream user's video
+      console.log("Got user permission for camera");
+      streamOutput.srcObject = stream;
+      return stream;
+    })
+    .then((stream) => {
+      // create a peer connection
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }], // Example STUN server
+      });
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+      
+      // Handle ICE candidates
+      // Potential network pathways to server
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          // Send candidate to the backend
+          sendToBackend({ iceCandidate: event.candidate });
+        }
+      };
+
+      // create offer
+      // Describes the media capabilities of the client
+    pc.createOffer()
+    .then(offer => pc.setLocalDescription(offer))
+    .then(() => {
+      // Send offer to server for frame processing
+      //sendToBackend({ offer: pc.localDescription });
+      // Send the offer to backend
+      
+      sdp = pc.localDescription.sdp
+      type = pc.localDescription.type
+      console.log('Sending to backend', sdp)
+      socket.emit('offer', { sdp: sdp, type: type });
+    });
+    });
+  // Add the video stream to the peer connection
+  
+});
+
+function sendToBackend(data) {
+  // Implement this function to send data to your backend
+  // For example, using WebSocket or AJAX
+  console.log('send to backend function')
+}
+/*video.addEventListener("loadedmetadata", () => {
     // Set canvas dimensions once based on the video element
     canvas.width = video.clientWidth;
     canvas.height = video.clientHeight;
@@ -100,5 +98,4 @@ document.addEventListener("DOMContentLoaded", (event) => {
   socket.on("print_response", function (degreeStr) {
     console.log("got response " + string);
     document.getElementById("degreeOutput").innerHTML = degreeStr;
-  });
-});
+  });*/
