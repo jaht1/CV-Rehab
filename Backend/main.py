@@ -49,17 +49,15 @@ async def offer(sid, data):
     print('Session id in offer: ', sid)
     # Parsing offer data
     sdp = data['sdp']
-    
     offer = RTCSessionDescription(sdp=sdp, type=data["type"])
-    
+    # Add video stream to the peer connection
+    #await pc.addTrack(MediaStreamTrack(kind="video"))
     # Set the remote description
     await pc.setRemoteDescription(offer)
     # Create an answer
     answer = await pc.createAnswer()
-    
     # Set the local description
     await pc.setLocalDescription(answer)
-    
     # Send the answer back to the client
     await sio.emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type}, room=sid)
 
@@ -70,6 +68,21 @@ async def answer(sid, answer):
     await pc.setRemoteDescription(answer)
     
     
+@sio.on('add_track')
+def add_track(stream):
+    print('adding track...')
+    print(stream)
+    video_track = stream.getVideoTracks()[0]
+    pc.addTrack(video_track)
+    print('succesfully added track', stream)
+    
+async def handle_track(track, _):
+    print('Received video track:')
+    
+
+pc.on("track", handle_track)
+
+
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
     nparr = np.frombuffer(frame, np.uint8)
