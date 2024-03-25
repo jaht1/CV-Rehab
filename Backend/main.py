@@ -63,7 +63,13 @@ async def offer(sid, data):
     # Send the answer back to the client
     await sio.emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type}, room=sid)
 
-
+@sio.on('answer')
+async def answer(sid, answer):
+    ''' Function to set remote description on the server-side peer connection '''
+    print('Set description')
+    await pc.setRemoteDescription(answer)
+    
+    
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
     nparr = np.frombuffer(frame, np.uint8)

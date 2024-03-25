@@ -25,7 +25,7 @@ socket.on("connect", function () {
 /* Video frame processing */
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", (event) => {
-  const streamOutput = document.getElementById("videoElement");
+  const videoElement = document.getElementById("videoElement");
   let pc;
   video = document.getElementById("videoElement");
   canvas = document.getElementById("canvasOutput");
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-      streamOutput.srcObject = stream;
+      videoElement.srcObject = stream;
       return stream;
     })
     .then((stream) => {
@@ -71,26 +71,34 @@ document.addEventListener("DOMContentLoaded", (event) => {
           socket.emit("offer", { sdp: sdp, type: type });
         });
     });
-  socket.on("answer", function (data) { 
+  socket.on("answer", function (data) {
     /**
      * Function that receives offer back from server
-     * 
+     *
      */
     //console.log("Received answer from server!!!!", data);
     const answer = new RTCSessionDescription(data);
     pc.setRemoteDescription(answer)
-    .then(() => {
-      console.log('Remote description set successfully!');
-    })
-    .catch((error) => {
-      console.error('Error setting remote description:', error);
-    });
+      .then(() => {
+        console.log("Remote description set successfully!");
+        // Create answer for server
+        return pc.createAnswer;
+      })
+      .then((localDescription) => {
+        // Set local description
+        return pc.setLocalDescription(localDescription);
+      })
+      .then(() => {
+        // Send local description (answer) back to the server
+        socket.emit("answer", pc.localDescription);
+      })
+      .catch((error) => {
+        console.error("Error setting remote description:", error);
+      });
   });
 });
 
-function sendToBackend(data) {
-  console.log("send to backend function");
-}
+function sendToBackend(data) {}
 /*video.addEventListener("loadedmetadata", () => {
     // Set canvas dimensions once based on the video element
     canvas.width = video.clientWidth;
