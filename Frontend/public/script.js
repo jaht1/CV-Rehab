@@ -31,6 +31,7 @@ async function createPeerConnection() {
   pc = new RTCPeerConnection({
     configuration,
   });
+  await socket.emit("icecandidate", { candidate: pc.candidate })
   await pc.createDataChannel("video");
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -40,17 +41,31 @@ async function createPeerConnection() {
   await socket.emit("offer", { sdp, type });
 }
 
-async function addEventListeners() {
-  await pc.addEventListener("track", function(event) {
-    console.log("Track event received:", event);
+function addEventListeners() {
+  pc.addEventListener("icegatheringstatechange", function () {
+    console.log("iceGatheringState:", pc.iceGatheringState);
+  });
+
+  // Event listener for iceconnectionstatechange event
+  pc.addEventListener("iceconnectionstatechange", function () {
+    console.log("iceConnectionState:", pc.iceConnectionState);
+  });
+
+  // Event listener for signalingstatechange event
+  pc.addEventListener("signalingstatechange", function () {
+    console.log("signalingState:", pc.signalingState);
+  });
+  
+  pc.addEventListener("track", function () {
+    console.log("Track event received:");
     // Handle track event...
   });
-  console.log('Added track eventlistener')
+ 
 }
 
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
-  console.log('DOM loaded')
+  console.log("DOM loaded");
   const videoElement = await document.getElementById("videoElement");
 
   video = document.getElementById("videoElement");
@@ -58,7 +73,7 @@ document.addEventListener("DOMContentLoaded", async (event) => {
   context = canvas.getContext("2d");
 
   await createPeerConnection();
-  await addEventListeners();
+  addEventListeners();
 
   // Access user's webcam
   await navigator.mediaDevices
@@ -73,11 +88,33 @@ document.addEventListener("DOMContentLoaded", async (event) => {
       return stream;
     })
     .then((stream) => {
-      for (const track of stream.getTracks()) {
+      stream.getTracks().forEach(function(track) {
+        trackData = {
+          'kind': track.kind,
+          'id': track.id,
+          'label': track.label,
+          'readyState': track.readyState
+
+        }
+
         pc.addTrack(track, stream);
-        console.log("stream:", stream);
-        socket.emit("add_track", pc.videoTrack);
-      }
+        //socket.emit("add_track", trackData);
+    });
+    /*
+      for (const track of stream.getTracks()) {
+        trackData = {
+          'kind': track.kind,
+          'id': track.id,
+          'label': track.label,
+          'readyState': track.readyState
+
+        }
+        let serializedTrack = JSON.stringify(trackData)
+        pc.addTrack(track, stream);
+        console.log("stream data:", trackData);
+        console.log(track)
+        socket.emit("add_track", serializedTrack);
+      }*/
 
       // Add track to peer connection
       /*await addTrack(stream, pc)

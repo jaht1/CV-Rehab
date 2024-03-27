@@ -10,9 +10,9 @@ import logging
 from app.rom_analysis import analyze_frame, rom_analysis
 import cv2
 import numpy as np
-
+import json
 #from aiohttp import web
-from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
+from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.media import MediaRelay
 
 app = FastAPI()
@@ -40,6 +40,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class VideoTransformTrack(MediaStreamTrack):
+    kind = "video"
+
+    def __init__(self, track):
+        super().__init__()  # Call the constructor of the base class
+        self.track = track
+
+    async def recv(self):
+        frame = await self.track.recv()
+        print('Track received! Try to make changes to it')
+        return frame
+        
+        
+        
+        
 async def renegotiate():
     # Create a new offer
     new_offer = await pc.createOffer()
@@ -51,18 +66,31 @@ async def renegotiate():
     await sio.emit('offer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type})
 
 # Set up an event listener for the "negotiationneeded" event
+
 @pc.on("negotiationneeded")
 async def on_negotiationneeded():
     print("Negotiation needed. Renegotiating...")
     await renegotiate()
-    
-pc.on("track")    
+
+
+@pc.on("track")    
 def on_track(track):
-    print('Track received')
+    try:
+        print('Track received in pc.on?!??!?!?')
+    except Exception as e:
+        print('Tried pc.on, failed: ', e)
 
+@pc.on("datachannel")
+def on_datachannel(channel):
+    @channel.on("video")
+    def on_message(message):
+        if isinstance(message, str) and message.startswith("ping"):
+            channel.send("pong" + message[4:])
 
-
-
+@sio.on("icecandidate")
+async def handle_icecandidate(sid, data):
+    candidate = data["candidate"]
+    await pc.addIceCandidate(candidate)
 
 @sio.on('offer')
 async def offer(sid, data):
@@ -96,12 +124,20 @@ async def answer(sid, answer):
     
 @sio.on('add_track')
 def add_track(sid, stream):
-    print('adding track...')
-    print(stream)
-    video_track = stream.getVideoTracks()[0]
-    print(video_track)
-    pc.addTrack(video_track)
-    print('succesfully added track', stream)
+    try:
+        print('adding track...')
+        track_data = json.loads(stream)
+        kind = track_data['kind']
+        track_id = track_data['id']
+        label = track_data['label']
+        print('track data: ', track_data)
+        relay_track = relay.subscribe(kind=kind, label=label, id=track_id)
+        #track = MediaStreamTrack(track_data)
+        video_track = VideoStreamTrack(relay_track)
+        pc.addTrack(video_track)
+        print('succesfully added track')
+    except Exception as e:
+        print('Something went wrong with adding track: ', e)
     
 
     
@@ -115,7 +151,6 @@ def process_frame_for_analysis(frame):
     # Use OpenCV to read the image data as an array (decode)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
     return frame
 
 @sio.on('process_frame')
@@ -136,7 +171,7 @@ def print_setup(sid):
     print('PC: ', pc.localDescription.sdp)
     # Print added tracks
     added_tracks = pc.getSenders()
-    print("Added Tracks:")
+    print("Added Tracks:", added_tracks)
     print('sender len ' + len(sender))
     for sender in added_tracks:
         track = sender.track
