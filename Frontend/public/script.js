@@ -2,7 +2,7 @@
 // , { transports: ['websocket', 'polling']}
 
 const socket = io("http://localhost:5000");
-let pc;
+
 socket.on("connect_error", (err) => {
   // the reason of the error, for example "xhr poll error"
   console.log(err.message);
@@ -18,31 +18,47 @@ socket.on("connect_error", (err) => {
 socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
+let pc;
 
-// Wait for website to be loaded
-document.addEventListener("DOMContentLoaded", async (event) => {
-  const videoElement = document.getElementById("videoElement");
-
-  video = document.getElementById("videoElement");
-  canvas = document.getElementById("canvasOutput");
-  context = canvas.getContext("2d");
-
+async function createPeerConnection() {
   // create a peer connection
   var configuration = {
     offerToReceiveAudio: false,
     offerToReceiveVideo: true,
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceTransportPolicy: "relay",
   };
   pc = new RTCPeerConnection({
-    configuration 
+    configuration,
   });
   await pc.createDataChannel("video");
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
   // Send the offer to the server
-  const { sdp, type } = pc.localDescription;
-  socket.emit("offer", { sdp, type });
+  const { sdp, type } = await pc.localDescription;
+  await socket.emit("offer", { sdp, type });
+}
+
+async function addEventListeners() {
+  await pc.addEventListener("track", function(event) {
+    console.log("Track event received:", event);
+    // Handle track event...
+  });
+  console.log('Added track eventlistener')
+}
+
+// Wait for website to be loaded
+document.addEventListener("DOMContentLoaded", async (event) => {
+  console.log('DOM loaded')
+  const videoElement = await document.getElementById("videoElement");
+
+  video = document.getElementById("videoElement");
+  canvas = document.getElementById("canvasOutput");
+  context = canvas.getContext("2d");
+
+  await createPeerConnection();
+  await addEventListeners();
 
   // Access user's webcam
   await navigator.mediaDevices
@@ -82,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     })
     .then(() => {
       console.log("PRINTING SETUP");
-      console.log(pc.localDescription.sdp)
+      console.log(pc.localDescription.sdp);
       socket.emit("print_setup");
     });
 });
