@@ -64,23 +64,31 @@ async def offer(sid, data):
 @sio.on('answer')
 async def answer(sid, answer):
     ''' Function to set remote description on the server-side peer connection '''
-    print('Set description')
-    await pc.setRemoteDescription(answer)
+    answer_description = RTCSessionDescription(type="offer", sdp=answer["sdp"])
+    print('Setting description in server...', answer)
+    await pc.setRemoteDescription(answer_description)
+    print('Description successfully set in server.')
+    
+    
     
     
 @sio.on('add_track')
-def add_track(stream):
+def add_track(sid, stream):
     print('adding track...')
     print(stream)
     video_track = stream.getVideoTracks()[0]
+    print(video_track)
     pc.addTrack(video_track)
     print('succesfully added track', stream)
     
-async def handle_track(track, _):
+
+    
+def handle_track(track, _):
     print('Received video track:')
     
+#pc.on("track")
 
-pc.on("track", handle_track)
+
 
 
 def process_frame_for_analysis(frame):

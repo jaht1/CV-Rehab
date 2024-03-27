@@ -24,7 +24,7 @@ socket.on("connect", function () {
 
 /* Video frame processing */
 // Wait for website to be loaded
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", async (event) => {
   const videoElement = document.getElementById("videoElement");
 
   video = document.getElementById("videoElement");
@@ -32,27 +32,39 @@ document.addEventListener("DOMContentLoaded", (event) => {
   context = canvas.getContext("2d");
 
   // Access user's webcam
-  navigator.mediaDevices
+
+ await navigator.mediaDevices
     .getUserMedia({ video: true })
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
       videoElement.srcObject = stream;
-      //socket.emit('add_track',stream)
       return stream;
     })
-    .then((stream) => {
+    .then( async (stream) => {
       // create a peer connection
       pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }], // Example STUN server
       });
+      for (const track of stream.getTracks()) {
+        pc.addTrack(track);
+        console.log('stream:' , stream)
+      }
+
       
-      // Push tracks from local stream to peer connection
-      //stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-      stream.getTracks().forEach((track)=> {
-        pc.addTrack(track, stream)
-      })
-      
+      // Add track to peer connection
+      /*await addTrack(stream, pc)
+        .then(() => {
+          console.log("Tracks added successfully");
+          socket.emit("add_track", stream);
+        })
+        .catch((error) => {
+          console.error("Error adding tracks:", error);
+        });
+*/
+      // Check for tracks after adding them
+      const senders = pc.getSenders();
+      const videoTrack = senders.find((sender) => sender.kind === "video");
 
       // Create offer
       // Describes the media capabilities of the client
@@ -64,17 +76,40 @@ document.addEventListener("DOMContentLoaded", (event) => {
           type = pc.localDescription.type;
           socket.emit("offer", { sdp: sdp, type: type });
         });
-        
     });
 });
 
+function addTrack(stream, pc) {
+  /**
+   * Function to add stream to PC
+   * Waits for the stream to be added
+   */
+  return new Promise((resolve, reject) => {
+    stream.getTracks().forEach((track) => pc.addTrack(track));
+    setTimeout(() => {
+      const senders = pc.getSenders();
+      const videoTrack = senders.find(
+        (sender) => sender.track && sender.track.kind === "video"
+      );
+
+      if (videoTrack) {
+        console.log("Found video track:", videoTrack.track);
+        resolve(videoTrack.track);
+      } else {
+        console.log("No video tracks found");
+        reject(new Error("No video tracks found"));
+      }
+    }, 1000);
+    // Once all tracks are added, resolve the Promise
+    resolve();
+  });
+}
 
 socket.on("answer", function (data) {
   /**
    * Function that receives offer back from server
    *
    */
-  //console.log("Received answer from server!!!!", data);
   const answer = new RTCSessionDescription(data);
   pc.setRemoteDescription(answer)
     .then(() => {
@@ -89,9 +124,23 @@ socket.on("answer", function (data) {
     .then(() => {
       // Send local description (answer) back to the server
       socket.emit("answer", pc.localDescription);
-      
+      //test();
     })
     .catch((error) => {
       console.error("Error setting remote description:", error);
     });
 });
+
+function test() {
+  const senders = pc.getSenders();
+
+  // Access specific track (assuming one video track)
+  const videoTrack = senders.find((sender) => sender.kind === "video");
+
+  if (videoTrack) {
+    console.log("Found video track:", videoTrack);
+    // You can access track properties or manipulate the track here
+  } else {
+    console.log("No video track found");
+  }
+}
