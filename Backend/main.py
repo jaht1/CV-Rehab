@@ -40,6 +40,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+async def renegotiate():
+    # Create a new offer
+    new_offer = await pc.createOffer()
+
+    # Set the local description to the new offer
+    await pc.setLocalDescription(new_offer)
+
+    # Send the new offer to the remote peer
+    await sio.emit('offer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type})
+
+# Set up an event listener for the "negotiationneeded" event
+@pc.on("negotiationneeded")
+async def on_negotiationneeded():
+    print("Negotiation needed. Renegotiating...")
+    await renegotiate()
+    
+pc.on("track")    
+def on_track(track):
+    print('Track received')
+
+
 
 
 
@@ -65,9 +86,10 @@ async def offer(sid, data):
 async def answer(sid, answer):
     ''' Function to set remote description on the server-side peer connection '''
     answer_description = RTCSessionDescription(type="offer", sdp=answer["sdp"])
-    print('Setting description in server...', answer)
+    print('Setting remote description in server...')
     await pc.setRemoteDescription(answer_description)
     print('Description successfully set in server.')
+    
     
     
     
@@ -86,11 +108,6 @@ def add_track(sid, stream):
 def handle_track(track, _):
     print('Received video track:')
     
-#pc.on("track")
-
-
-
-
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
     nparr = np.frombuffer(frame, np.uint8)
@@ -113,7 +130,20 @@ async def analysis(sid, frame):
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
         raise
-
+    
+@sio.on('print_setup')
+def print_setup(sid):
+    print('PC: ', pc.localDescription.sdp)
+    # Print added tracks
+    added_tracks = pc.getSenders()
+    print("Added Tracks:")
+    print('sender len ' + len(sender))
+    for sender in added_tracks:
+        track = sender.track
+        if track:
+            print("Track ID:", track.id)
+            print("Track Kind:", track.kind)
+    
         
 @sio.on("connect")
 async def connect(sid, env):

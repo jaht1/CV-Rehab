@@ -19,10 +19,6 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-/* Access web camera from index.html */
-// Ask user permission
-
-/* Video frame processing */
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   const videoElement = document.getElementById("videoElement");
@@ -31,27 +27,42 @@ document.addEventListener("DOMContentLoaded", async (event) => {
   canvas = document.getElementById("canvasOutput");
   context = canvas.getContext("2d");
 
-  // Access user's webcam
+  // create a peer connection
+  var configuration = {
+    offerToReceiveAudio: false,
+    offerToReceiveVideo: true,
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  };
+  pc = new RTCPeerConnection({
+    configuration 
+  });
+  await pc.createDataChannel("video");
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
 
- await navigator.mediaDevices
-    .getUserMedia({ video: true })
+  // Send the offer to the server
+  const { sdp, type } = pc.localDescription;
+  socket.emit("offer", { sdp, type });
+
+  // Access user's webcam
+  await navigator.mediaDevices
+    .getUserMedia({
+      audio: false,
+      video: true,
+    })
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
       videoElement.srcObject = stream;
       return stream;
     })
-    .then( async (stream) => {
-      // create a peer connection
-      pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }], // Example STUN server
-      });
+    .then((stream) => {
       for (const track of stream.getTracks()) {
-        pc.addTrack(track);
-        console.log('stream:' , stream)
+        pc.addTrack(track, stream);
+        console.log("stream:", stream);
+        socket.emit("add_track", pc.videoTrack);
       }
 
-      
       // Add track to peer connection
       /*await addTrack(stream, pc)
         .then(() => {
@@ -68,14 +79,11 @@ document.addEventListener("DOMContentLoaded", async (event) => {
 
       // Create offer
       // Describes the media capabilities of the client
-      pc.createOffer()
-        .then((offer) => pc.setLocalDescription(offer))
-        .then(() => {
-          // Send offer to server
-          sdp = pc.localDescription.sdp;
-          type = pc.localDescription.type;
-          socket.emit("offer", { sdp: sdp, type: type });
-        });
+    })
+    .then(() => {
+      console.log("PRINTING SETUP");
+      console.log(pc.localDescription.sdp)
+      socket.emit("print_setup");
     });
 });
 
