@@ -89,13 +89,13 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     })
     .then((stream) => {
       stream.getTracks().forEach(function(track) {
-        trackData = {
+        /*trackData = {
           'kind': track.kind,
           'id': track.id,
           'label': track.label,
           'readyState': track.readyState
 
-        }
+        }*/
 
         pc.addTrack(track, stream);
         //socket.emit("add_track", trackData);

@@ -196,7 +196,8 @@ def analyze_frame(frame):
 
         processed_frame = process_frame(frame)
         return shoulder_string, processed_frame
-    except:
+    except Exception as e:
+        print('Something went wrong with the object detection: ', e)
         # Sends frame unprocessed if no angle could be detected to avoid interruptions on output stream
         processed_frame = process_frame(frame)
         return "", processed_frame

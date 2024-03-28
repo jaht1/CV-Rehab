@@ -46,16 +46,27 @@ class VideoTransformTrack(MediaStreamTrack):
     def __init__(self, track):
         super().__init__()  # Call the constructor of the base class
         self.track = track
+        #self.transform = transform
+        print('init!!')
 
     async def recv(self):
-        frame = await self.track.recv()
-        print('Track received! Try to make changes to it')
-        return frame
+        try:
+            print('in recv....')
+            frame = await self.track.recv()
+            print('Track received! Try to make changes to it')
+
+            img = frame.to_ndarray(format="bgr24")
+            frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            angle, frame = analyze_frame(frame)
+            print('Succesfully processed frame before analysis')
+            return frame
+        except Exception as e:
+            print('Something went wrong with processing the frame: ', e)
+    
         
         
         
-        
-async def renegotiate():
+'''async def renegotiate():
     # Create a new offer
     new_offer = await pc.createOffer()
 
@@ -70,13 +81,30 @@ async def renegotiate():
 @pc.on("negotiationneeded")
 async def on_negotiationneeded():
     print("Negotiation needed. Renegotiating...")
-    await renegotiate()
-
+    await renegotiate()'''
+    
+    
+async def subscribe_track(track):
+    try:
+        print('in subscribe track...')
+        relay_track = relay.subscribe(track)
+        print('Succesfully subscribing track!')
+        return relay_track
+    except Exception as e:
+        print('Error subscribing track:', e)
+        return None       
 
 @pc.on("track")    
-def on_track(track):
+async def on_track(track):
     try:
+        
         print('Track received in pc.on?!??!?!?')
+        relay_track = await subscribe_track(track)
+        if relay_track:
+            pc.addTrack(VideoTransformTrack(relay_track))
+            print('Track added successfully', track.kind)
+        else:
+            print('Failed to add track', track)
     except Exception as e:
         print('Tried pc.on, failed: ', e)
 
@@ -87,11 +115,11 @@ def on_datachannel(channel):
         if isinstance(message, str) and message.startswith("ping"):
             channel.send("pong" + message[4:])
 
-@sio.on("icecandidate")
+'''@sio.on("icecandidate")
 async def handle_icecandidate(sid, data):
     candidate = data["candidate"]
     await pc.addIceCandidate(candidate)
-
+'''
 @sio.on('offer')
 async def offer(sid, data):
     ''' Function to establish a connection between client and server using WebRTC '''
@@ -113,7 +141,7 @@ async def offer(sid, data):
 @sio.on('answer')
 async def answer(sid, answer):
     ''' Function to set remote description on the server-side peer connection '''
-    answer_description = RTCSessionDescription(type="offer", sdp=answer["sdp"])
+    answer_description = RTCSessionDescription(type="answer", sdp=answer["sdp"])
     print('Setting remote description in server...')
     await pc.setRemoteDescription(answer_description)
     print('Description successfully set in server.')
@@ -122,7 +150,7 @@ async def answer(sid, answer):
     
     
     
-@sio.on('add_track')
+'''@sio.on('add_track')
 def add_track(sid, stream):
     try:
         print('adding track...')
@@ -135,14 +163,12 @@ def add_track(sid, stream):
         #track = MediaStreamTrack(track_data)
         video_track = VideoStreamTrack(relay_track)
         pc.addTrack(video_track)
-        print('succesfully added track')
+        print('succesfully added track: ', video_track)
     except Exception as e:
         print('Something went wrong with adding track: ', e)
-    
+    '''
 
     
-def handle_track(track, _):
-    print('Received video track:')
     
 def process_frame_for_analysis(frame):
     '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
@@ -153,7 +179,7 @@ def process_frame_for_analysis(frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     return frame
 
-@sio.on('process_frame')
+"""@sio.on('process_frame')
 async def analysis(sid, frame):
     ''' Function that receives a frame from the client '''
     try:
@@ -164,7 +190,7 @@ async def analysis(sid, frame):
         await sio.emit('response_back', frame_bytes, to=sid)
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
-        raise
+        raise"""
     
 @sio.on('print_setup')
 def print_setup(sid):
