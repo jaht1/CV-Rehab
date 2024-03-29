@@ -18,53 +18,7 @@ socket.on("connect_error", (err) => {
 socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
-/*
-function stop() {
-  pc.onsignalingstatechange = null;
-  pc.onconnectionstatechange = null;
-  pc.onnegotiationneeded = null;
-  pc.onicecandidate = null;
-  pc.ontrack = null;
-  pc.getSenders().forEach(function (sender) {
-    sender.track.stop();
-  });
-  pc.getSenders().forEach((sender) => {
-    console.log("STOP SENDER", sender);
-    pc.removeTrack(sender);
-    sender.setStreams();
-    sender.track?.stop();
-  });
-  pc.getReceivers().forEach((receiver) => {
-    receiver.track?.stop();
-  });
-  pc.getTransceivers().forEach((transceiver) => {
-    pc.removeTrack(transceiver.sender);
-    transceiver.sender.setStreams();
-    transceiver.sender.track?.stop();
-    transceiver.stop();
-  });
 
-  pc.close();
-  console.log(pc.sdp);
-}
-
-window.onbeforeunload = function (event) {
-  try {
-    console.log("REFRESHING");
-    stop();
-  } catch (error) {
-    console.log("error deleting...", error);
-  }
-};
-
-window.addEventListener("beforeunload", function (event) {
-  // Perform actions before the page is unloaded or refreshed
-  // You can show a confirmation dialog or perform cleanup tasks here
-  // Note: Returning a string will prompt the user with a confirmation dialog
-  // event.preventDefault(); // Uncomment this line to prevent the default browser dialog
-  console.log("test...");
-});
-*/
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
@@ -83,15 +37,9 @@ async function createPeerConnection() {
 }
 
 function addEventListeners() {
-  pc.ontrack = (e) => {
-    console.log("pc.ontrack");
-    videoElement.srcObject = e.streams[0];
-    hangupButton.disabled = false;
-    return false;
-  };
 
   pc.addEventListener("track", function () {
-    console.log("Track event received:");
+    console.log("TRACK EVENT RECEIVED!!");
     // Handle track event...
   });
 
@@ -107,44 +55,24 @@ function addEventListeners() {
   pc.addEventListener("iceconnectionstatechange", function () {
     console.log("iceConnectionState:", pc.iceConnectionState);
   });
-
+  pc.addEventListener("connectionstatechange", (event) => {
+    if (pc.connectionState === "connected") {
+      console.log("peers connected!");
+    }
+  });
   // Event listener for signalingstatechange event
   pc.addEventListener("signalingstatechange", function () {
     console.log("signalingState:", pc.signalingState);
-    /*if (pc.signalingState == "closed") {
-      console.log("SIGNALINGSTATE CLOSED. DELETING PC.");
-      try {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
-      } catch (error) {
-        console.log("couldnt clsoe track");
-      }
-    }*/
+ 
   });
 }
-/*
-async function renegotiate() {
-  try {
-      // Create a new offer
-      console.log('Renegtiating...')
-      const offer = await pc.createOffer();
 
-      // Set the local description to the new offer
-      await pc.setLocalDescription(offer);
-
-      // Send the new offer to the remote peer through your signaling channel
-      // (code to send offer to the server)
-  } catch (error) {
-      console.error("Error during renegotiation:", error);
-  }
-}*/
 async function createOffer() {
   try {
     console.log("in createOffer");
     // Create offer
     return pc
-      .createOffer()
+      .createOffer({offerToReceiveAudio: false, offerToReceiveVideo: true})
       .then(function (offer) {
         // set localdescription
         return pc.setLocalDescription(offer);
@@ -159,7 +87,7 @@ async function createOffer() {
             // wait for ice gathering to complete if not already
             function checkState() {
               if (pc.iceGatheringState === "complete") {
-                console.log('icegathering complete')
+                console.log("icegathering complete");
                 // If ICE gathering becomes complete, remove the listener and resolve
                 pc.removeEventListener("icegatheringstatechange", checkState);
                 resolve();
@@ -169,48 +97,18 @@ async function createOffer() {
             pc.addEventListener("icegatheringstatechange", checkState);
           }
         });
-      }).then(function() {
+      })
+      .then(function () {
         const { sdp, type } = pc.localDescription;
         socket.emit("offer", { sdp, type });
-      })
-
-    const offer = await pc.createOffer().then(pc.setLocalDescription(offer));
-    console.log("set localdescription");
-    // Wait for ICE connection to be established
-    await new Promise((resolve) => {
-      console.log("Awaiting promise");
-      // Event listener for iceconnectionstatechange event
-      pc.addEventListener(
-        "iceconnectionstatechange",
-        function iceConnectionHandler() {
-          console.log("iceConnectionState:", pc.iceConnectionState);
-          if (pc.iceConnectionState === "complete") {
-            // ICE connection is established
-            console.log("ICE connection established.");
-            // Remove the event listener
-            pc.removeEventListener(
-              "iceconnectionstatechange",
-              iceConnectionHandler
-            );
-            // Resolve the promise to indicate that ICE connection is established
-            resolve();
-          }
-        }
-      );
-    });
-
-    // Set local description
-    //await pc.setLocalDescription(offer);
-    console.log("Inside createoffer !!!");
-    // Send the offer to the server
-    const { sdp, type } = pc.localDescription;
-    await socket.emit("offer", { sdp, type });
+      });
   } catch (error) {
     console.error("Error creating offer and setting local description:", error);
   }
 }
 
 // Wait for website to be loaded
+
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
   pc = await createPeerConnection();
@@ -284,17 +182,18 @@ socket.on("answer", function (data) {
   const answer = new RTCSessionDescription(data);
   pc.setRemoteDescription(answer)
     .then(() => {
-      console.log("Remote description set successfully!");
+      console.log("Remote description set successfully!", answer);
       //console.log("Received answer from server:", answer);
     })
     .then(() => {
-      // Check if tracks are added
-      const senders = pc.getSenders();
-      senders.forEach((sender) => {
-        console.log("Sender track:", sender.track);
-        if (sender.track.kind === "video") {
+      const receivers = pc.getReceivers();
+
+      console.log("Remote tracks:");
+      receivers.forEach((receiver) => {
+        console.log("Sender track:", receiver.track);
+        if (receiver.track.kind === "video") {
           const videoElement = document.getElementById("remoteVideo");
-          videoElement.srcObject = new MediaStream([sender.track]);
+          videoElement.srcObject = new MediaStream([receiver.track]);
         }
       });
     })

@@ -14,16 +14,43 @@ import json
 #from aiohttp import web
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.media import MediaRelay,MediaStreamError
+from av import VideoFrame
+
 
 app = FastAPI()
 router = APIRouter()
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
 
-pcs = set()
-pc = RTCPeerConnection()
+#pcs = set()
 relay = MediaRelay()
 
+class VideoTransformTrack(MediaStreamTrack):
+    """
+    A video stream track that transforms frames from an another track.
+    """
+    kind = "video"
+
+    def __init__(self, track):
+        super().__init__()  # Call the constructor of the base class
+        self.track = track
+        #self.transform = transform
+        print('init!!', track)
+
+    async def recv(self):
+        print('in recv....')
+        frame = await self.track.recv()
+        if frame:
+            print('Track received! Try to make changes to it')
+             # perform edge detection
+            img = frame.to_ndarray(format="bgr24")
+            img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
+
+            # rebuild a VideoFrame, preserving timing information
+            new_frame = VideoFrame.from_ndarray(img, format="bgr24")
+            new_frame.pts = frame.pts
+            new_frame.time_base = frame.time_base
+            self.track = new_frame
 
 # Socketio serves under /
 app.mount('/', socket_app)
@@ -40,84 +67,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class VideoTransformTrack(MediaStreamTrack):
-    kind = "video"
 
-    def __init__(self, track):
-        super().__init__()  # Call the constructor of the base class
-        self.track = track
-        #self.transform = transform
-        print('init!!')
+pc = RTCPeerConnection()
 
-    async def recv(self):
-        print('in recv....')
-        frame = await self.track.recv()
-        if frame:
-            print('Track received! Try to make changes to it')
-
-            img = frame.to_ndarray(format="bgr24")
-            img = cv2.flip(img, 1)
-            return img
-            frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            angle, frame = analyze_frame(frame)
-            print('Succesfully processed frame before analysis')
-            return frame
-
-                
-            '''print('Track received! Try to make changes to it')
-
-            img = frame.to_ndarray(format="bgr24")
-            frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            angle, frame = analyze_frame(frame)
-            print('Succesfully processed frame before analysis')
-            return frame'''
-    
-        
-        
-        
-'''async def renegotiate():
-    # Create a new offer
-    new_offer = await pc.createOffer()
-
-    # Set the local description to the new offer
-    await pc.setLocalDescription(new_offer)
-
-    # Send the new offer to the remote peer
-    await sio.emit('offer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type})
-
-# Set up an event listener for the "negotiationneeded" event
-
-@pc.on("negotiationneeded")
-async def on_negotiationneeded():
-    print("Negotiation needed. Renegotiating...")
-    await renegotiate()'''
-    
-'''@pc.on("connectionstatechange")
+@pc.on("connectionstatechange")
 async def on_connectionstatechange():
-    print("Connection state is: ", pc.connectionState)
-    if pc.connectionState == "closed":
+    print('connections change')
+    
+    print("Connection state is %s", pc.connectionState)
+    added_tracks = pc.getSenders()
+
+    print("Added tracks:")
+    for sender in added_tracks:
+        track = sender.track
+        if track:
+            print("Track ID:", track.id)
+            print("Track Kind:", track.kind)
+    if pc.connectionState == "failed":
+        await pc.close()
+@pc.on("track")    
+def on_track(track):
+    try:
+        print('Track received in pc.on?!??!?!? ', track)
+        video_track = VideoTransformTrack(relay.subscribe(track))
+        #await video_track.recv()
+        pc.addTrack(video_track)
+        added_tracks = pc.getReceivers()
         
-        try:
-            senders = pc.getSenders()
-            
-            # Stop each track to release the resources
-            for sender in senders:
-                track = sender.track
-                if track:
-                    track.enabled = False
-                    track.stop()
-                    
-            print('senders: ', senders)
-            await pc.close()
-            print('connection is closed.')
-        except Exception as e:
-            print('error: ', e)
-        #pcs.discard(pc)   '''
+        print("Added tracks:")
+        for sender in added_tracks:
+            track = sender.track
+            if track:
+                print("Track ID:", track.id)
+                print("Track Kind:", track.kind)
+                
+        # Print the added track
+        print("Track added to peer connection:", pc)
+    except Exception as e:
+        print('Tried pc.on, failed: ', e)
+
+
     
 async def subscribe_track(track):
     try:
         print('in subscribe track...')
-        relay_track = relay.subscribe(track)
+        relay_track = await relay.subscribe(track)
         print('Succesfully subscribing track!')
         return relay_track
     except Exception as e:
@@ -126,41 +120,21 @@ async def subscribe_track(track):
 
 
 
-'''@sio.on("icecandidate")
-async def handle_icecandidate(sid, data):
-    candidate = data["candidate"]
-    await pc.addIceCandidate(candidate)
-'''
 @sio.on('offer')
 async def offer(sid, data):
     try:
         ''' Function to establish a connection between client and server using WebRTC 
         Receives an offer from the client '''
+        
         print('Session id in offer: ', sid)
         # Parsing offer data
         sdp = data['sdp']
+        
         offer = RTCSessionDescription(sdp=sdp, type=data["type"])
         # Add video stream to the peer connection
         #await pc.addTrack(MediaStreamTrack(kind="video"))
         # Set the remote description
-        @pc.on("track")    
-        async def on_track(track):
-            try:
-                print('Track received in pc.on?!??!?!? ', track)
-                video_track = VideoTransformTrack(relay.subscribe(track))
-                pc.addTrack(video_track)
-
-                # Print the added track
-                print("Track added to peer connection:", video_track)
-            except Exception as e:
-                print('Tried pc.on, failed: ', e)
-
-        @pc.on("datachannel")
-        def on_datachannel(channel):
-            @channel.on("video")
-            def on_message(message):
-                if isinstance(message, str) and message.startswith("ping"):
-                    channel.send("pong" + message[4:])
+        
         await pc.setRemoteDescription(offer)
         # Create an answer
         answer = await pc.createAnswer()
@@ -172,35 +146,6 @@ async def offer(sid, data):
     except Exception as e:
         print('Problem with offer: ', e)
 
-"""@sio.on('answer')
-async def answer(sid, answer):
-    ''' Function to set remote description on the server-side peer connection '''
-    answer_description = RTCSessionDescription(type="offer", sdp=answer["sdp"])
-    print('Setting remote description in server...')
-    await pc.setRemoteDescription(answer_description)
-    print('Description successfully set in server.')"""
-    
-    
-    
-    
-    
-'''@sio.on('add_track')
-def add_track(sid, stream):
-    try:
-        print('adding track...')
-        track_data = json.loads(stream)
-        kind = track_data['kind']
-        track_id = track_data['id']
-        label = track_data['label']
-        print('track data: ', track_data)
-        relay_track = relay.subscribe(kind=kind, label=label, id=track_id)
-        #track = MediaStreamTrack(track_data)
-        video_track = VideoStreamTrack(relay_track)
-        pc.addTrack(video_track)
-        print('succesfully added track: ', video_track)
-    except Exception as e:
-        print('Something went wrong with adding track: ', e)
-    '''
 
     
     
