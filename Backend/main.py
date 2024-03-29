@@ -13,7 +13,7 @@ import numpy as np
 import json
 #from aiohttp import web
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
-from aiortc.contrib.media import MediaRelay
+from aiortc.contrib.media import MediaRelay,MediaStreamError
 
 app = FastAPI()
 router = APIRouter()
@@ -53,13 +53,23 @@ class VideoTransformTrack(MediaStreamTrack):
         try:
             print('in recv....')
             frame = await self.track.recv()
-            print('Track received! Try to make changes to it')
+            if frame:
+                print('Track received! Try to make changes to it')
+
+                img = frame.to_ndarray(format="bgr24")
+                frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                angle, frame = analyze_frame(frame)
+                print('Succesfully processed frame before analysis')
+                return frame
+            else:
+                raise MediaStreamError()
+            '''print('Track received! Try to make changes to it')
 
             img = frame.to_ndarray(format="bgr24")
             frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             angle, frame = analyze_frame(frame)
             print('Succesfully processed frame before analysis')
-            return frame
+            return frame'''
         except Exception as e:
             print('Something went wrong with processing the frame: ', e)
     
@@ -83,6 +93,27 @@ async def on_negotiationneeded():
     print("Negotiation needed. Renegotiating...")
     await renegotiate()'''
     
+'''@pc.on("connectionstatechange")
+async def on_connectionstatechange():
+    print("Connection state is: ", pc.connectionState)
+    if pc.connectionState == "closed":
+        
+        try:
+            senders = pc.getSenders()
+            
+            # Stop each track to release the resources
+            for sender in senders:
+                track = sender.track
+                if track:
+                    track.enabled = False
+                    track.stop()
+                    
+            print('senders: ', senders)
+            await pc.close()
+            print('connection is closed.')
+        except Exception as e:
+            print('error: ', e)
+        #pcs.discard(pc)   '''
     
 async def subscribe_track(track):
     try:
@@ -97,11 +128,12 @@ async def subscribe_track(track):
 @pc.on("track")    
 async def on_track(track):
     try:
-        
-        print('Track received in pc.on?!??!?!?')
+        print('Track received in pc.on?!??!?!? ', track)
         relay_track = await subscribe_track(track)
         if relay_track:
-            pc.addTrack(VideoTransformTrack(relay_track))
+            video_transform_track = VideoTransformTrack(relay_track)
+            print('Video transform track: ', video_transform_track)
+            pc.addTrack(video_transform_track)
             print('Track added successfully', track.kind)
         else:
             print('Failed to add track', track)
@@ -122,29 +154,34 @@ async def handle_icecandidate(sid, data):
 '''
 @sio.on('offer')
 async def offer(sid, data):
-    ''' Function to establish a connection between client and server using WebRTC '''
-    print('Session id in offer: ', sid)
-    # Parsing offer data
-    sdp = data['sdp']
-    offer = RTCSessionDescription(sdp=sdp, type=data["type"])
-    # Add video stream to the peer connection
-    #await pc.addTrack(MediaStreamTrack(kind="video"))
-    # Set the remote description
-    await pc.setRemoteDescription(offer)
-    # Create an answer
-    answer = await pc.createAnswer()
-    # Set the local description
-    await pc.setLocalDescription(answer)
-    # Send the answer back to the client
-    await sio.emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type}, room=sid)
+    try:
+        ''' Function to establish a connection between client and server using WebRTC 
+        Receives an offer from the client '''
+        print('Session id in offer: ', sid)
+        # Parsing offer data
+        sdp = data['sdp']
+        offer = RTCSessionDescription(sdp=sdp, type=data["type"])
+        # Add video stream to the peer connection
+        #await pc.addTrack(MediaStreamTrack(kind="video"))
+        # Set the remote description
+        await pc.setRemoteDescription(offer)
+        # Create an answer
+        answer = await pc.createAnswer()
+        # Set the local description
+        await pc.setLocalDescription(answer)
+        # Send the answer back to the client
+        print('Succesfully received offer, returning answer')
+        await sio.emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type}, room=sid)
+    except Exception as e:
+        print('Problem with offer: ', e)
 
-@sio.on('answer')
+"""@sio.on('answer')
 async def answer(sid, answer):
     ''' Function to set remote description on the server-side peer connection '''
-    answer_description = RTCSessionDescription(type="answer", sdp=answer["sdp"])
+    answer_description = RTCSessionDescription(type="offer", sdp=answer["sdp"])
     print('Setting remote description in server...')
     await pc.setRemoteDescription(answer_description)
-    print('Description successfully set in server.')
+    print('Description successfully set in server.')"""
     
     
     
@@ -213,6 +250,9 @@ async def connect(sid, env):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("Client Disconnected: "+" "+str(sid))
+    
+    await pc.close()
+    print('closed pc : ', pc)
 
 
 if __name__ == "__main__":

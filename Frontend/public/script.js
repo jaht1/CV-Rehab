@@ -2,7 +2,7 @@
 // , { transports: ['websocket', 'polling']}
 
 const socket = io("http://localhost:5000");
-
+let pc = null;
 socket.on("connect_error", (err) => {
   // the reason of the error, for example "xhr poll error"
   console.log(err.message);
@@ -18,8 +18,53 @@ socket.on("connect_error", (err) => {
 socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
-let pc;
+/*
+function stop() {
+  pc.onsignalingstatechange = null;
+  pc.onconnectionstatechange = null;
+  pc.onnegotiationneeded = null;
+  pc.onicecandidate = null;
+  pc.ontrack = null;
+  pc.getSenders().forEach(function (sender) {
+    sender.track.stop();
+  });
+  pc.getSenders().forEach((sender) => {
+    console.log("STOP SENDER", sender);
+    pc.removeTrack(sender);
+    sender.setStreams();
+    sender.track?.stop();
+  });
+  pc.getReceivers().forEach((receiver) => {
+    receiver.track?.stop();
+  });
+  pc.getTransceivers().forEach((transceiver) => {
+    pc.removeTrack(transceiver.sender);
+    transceiver.sender.setStreams();
+    transceiver.sender.track?.stop();
+    transceiver.stop();
+  });
 
+  pc.close();
+  console.log(pc.sdp);
+}
+
+window.onbeforeunload = function (event) {
+  try {
+    console.log("REFRESHING");
+    stop();
+  } catch (error) {
+    console.log("error deleting...", error);
+  }
+};
+
+window.addEventListener("beforeunload", function (event) {
+  // Perform actions before the page is unloaded or refreshed
+  // You can show a confirmation dialog or perform cleanup tasks here
+  // Note: Returning a string will prompt the user with a confirmation dialog
+  // event.preventDefault(); // Uncomment this line to prevent the default browser dialog
+  console.log("test...");
+});
+*/
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
@@ -31,17 +76,25 @@ async function createPeerConnection() {
   pc = new RTCPeerConnection({
     configuration,
   });
-  await socket.emit("icecandidate", { candidate: pc.candidate })
-  await pc.createDataChannel("video");
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
 
-  // Send the offer to the server
-  const { sdp, type } = await pc.localDescription;
-  await socket.emit("offer", { sdp, type });
+  addEventListeners();
+  // Set up the offer
 }
 
+
 function addEventListeners() {
+  pc.ontrack = e => {
+    console.log('pc.ontrack')
+    videoElement.srcObject = e.streams[0];
+    hangupButton.disabled = false;
+    return false;
+  }
+
+  pc.addEventListener("track", function () {
+    console.log("Track event received:");
+    // Handle track event...
+  });
+
   pc.addEventListener("icegatheringstatechange", function () {
     console.log("iceGatheringState:", pc.iceGatheringState);
   });
@@ -54,26 +107,60 @@ function addEventListeners() {
   // Event listener for signalingstatechange event
   pc.addEventListener("signalingstatechange", function () {
     console.log("signalingState:", pc.signalingState);
+    if (pc.signalingState == "closed") {
+      console.log("SIGNALINGSTATE CLOSED. DELETING PC.");
+      try {
+        stream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      } catch (error) {
+        console.log("couldnt clsoe track");
+      }
+    }
   });
-  
-  pc.addEventListener("track", function () {
-    console.log("Track event received:");
-    // Handle track event...
-  });
- 
+
+
+}
+async function renegotiate() {
+  try {
+      // Create a new offer
+      console.log('Renegtiating...')
+      const offer = await pc.createOffer();
+
+      // Set the local description to the new offer
+      await pc.setLocalDescription(offer);
+
+      // Send the new offer to the remote peer through your signaling channel
+      // (code to send offer to the server)
+  } catch (error) {
+      console.error("Error during renegotiation:", error);
+  }
+}
+async function createOffer() {
+  try {
+    // Create offer
+
+    const offer = await pc.createOffer();
+
+    // Set local description
+    await pc.setLocalDescription(offer);
+    console.log("Inside createoffer !!!");
+    // Send the offer to the server
+    const { sdp, type } = pc.localDescription;
+    await socket.emit("offer", { sdp, type });
+  } catch (error) {
+    console.error("Error creating offer and setting local description:", error);
+  }
 }
 
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
-  const videoElement = await document.getElementById("videoElement");
-
-  video = document.getElementById("videoElement");
-  canvas = document.getElementById("canvasOutput");
-  context = canvas.getContext("2d");
-
   await createPeerConnection();
-  addEventListeners();
+
+  /*video = document.getElementById("videoElement");
+  canvas = document.getElementById("canvasOutput");
+  context = canvas.getContext("2d");*/
 
   // Access user's webcam
   await navigator.mediaDevices
@@ -84,58 +171,23 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
+
+      const videoElement = document.getElementById("videoElement");
       videoElement.srcObject = stream;
       return stream;
     })
     .then((stream) => {
-      stream.getTracks().forEach(function(track) {
-        /*trackData = {
-          'kind': track.kind,
-          'id': track.id,
-          'label': track.label,
-          'readyState': track.readyState
-
-        }*/
-
+      stream.getTracks().forEach(function (track) {
         pc.addTrack(track, stream);
-        //socket.emit("add_track", trackData);
-    });
-    /*
-      for (const track of stream.getTracks()) {
-        trackData = {
-          'kind': track.kind,
-          'id': track.id,
-          'label': track.label,
-          'readyState': track.readyState
-
-        }
-        let serializedTrack = JSON.stringify(trackData)
-        pc.addTrack(track, stream);
-        console.log("stream data:", trackData);
-        console.log(track)
-        socket.emit("add_track", serializedTrack);
-      }*/
-
-      // Add track to peer connection
-      /*await addTrack(stream, pc)
-        .then(() => {
-          console.log("Tracks added successfully");
-          socket.emit("add_track", stream);
-        })
-        .catch((error) => {
-          console.error("Error adding tracks:", error);
-        });
-*/
-      // Check for tracks after adding them
-      const senders = pc.getSenders();
-      const videoTrack = senders.find((sender) => sender.kind === "video");
-
-      // Create offer
-      // Describes the media capabilities of the client
+      });
     })
     .then(() => {
-      console.log("PRINTING SETUP");
-      console.log(pc.localDescription.sdp);
+      console.log("creating offer");
+      return createOffer();
+    })
+    .then(() => {
+      //console.log("PRINTING SETUP");
+      //console.log(pc.localDescription.sdp);
       socket.emit("print_setup");
     });
 });
@@ -175,17 +227,18 @@ socket.on("answer", function (data) {
   pc.setRemoteDescription(answer)
     .then(() => {
       console.log("Remote description set successfully!");
-      // Create answer for server
-      return pc.createAnswer;
-    })
-    .then((localDescription) => {
-      // Set local description
-      return pc.setLocalDescription(localDescription);
+      //console.log("Received answer from server:", answer);
     })
     .then(() => {
-      // Send local description (answer) back to the server
-      socket.emit("answer", pc.localDescription);
-      //test();
+      // Check if tracks are added
+      const senders = pc.getSenders();
+      senders.forEach((sender) => {
+        console.log("Sender track:", sender.track);
+        if (sender.track.kind === "video") {
+          const videoElement = document.getElementById("remoteVideo");
+          videoElement.srcObject = new MediaStream([sender.track]);
+        }
+      });
     })
     .catch((error) => {
       console.error("Error setting remote description:", error);
