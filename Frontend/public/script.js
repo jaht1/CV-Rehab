@@ -38,8 +38,10 @@ async function createPeerConnection() {
 
 function addEventListeners() {
 
-  pc.addEventListener("track", function () {
+  pc.addEventListener("track", function (event) {
     console.log("TRACK EVENT RECEIVED!!");
+    console.log(event.streams[0])
+    document.getElementById('remoteVideo').srcObject = event.streams[0];
     // Handle track event...
   });
 
@@ -192,8 +194,8 @@ socket.on("answer", function (data) {
       receivers.forEach((receiver) => {
         console.log("Sender track:", receiver.track);
         if (receiver.track.kind === "video") {
-          const videoElement = document.getElementById("remoteVideo");
-          videoElement.srcObject = new MediaStream([receiver.track]);
+          //const videoElement = document.getElementById("remoteVideo");
+          //videoElement.srcObject = new MediaStream([receiver.track]);
         }
       });
     })

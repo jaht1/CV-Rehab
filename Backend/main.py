@@ -14,7 +14,7 @@ import json
 #from aiohttp import web
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.contrib.media import MediaRelay,MediaStreamError
-from av import VideoFrame
+import av
 
 
 app = FastAPI()
@@ -42,15 +42,23 @@ class VideoTransformTrack(MediaStreamTrack):
         frame = await self.track.recv()
         if frame:
             print('Track received! Try to make changes to it')
-             # perform edge detection
-            img = frame.to_ndarray(format="bgr24")
-            img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
-
-            # rebuild a VideoFrame, preserving timing information
-            new_frame = VideoFrame.from_ndarray(img, format="bgr24")
+            # Convert to numpy array for analysis
+            np_frame = frame.to_ndarray(format="bgr24")
+            processed_frame = analyze_frame(np_frame)
+            # Convert processed numpy array back to VideoFrame
+            new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
             new_frame.pts = frame.pts
             new_frame.time_base = frame.time_base
-            self.track = new_frame
+            return new_frame
+            '''img = frame.to_ndarray(format="bgr24")
+            frame_analyzed, _ = analyze_frame(img)
+            #img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
+
+            # rebuild a VideoFrame, preserving timing information
+            new_frame = VideoFrame.from_ndarray(frame_analyzed, format="bgr24")
+            new_frame.pts = frame.pts
+            new_frame.time_base = frame.time_base
+            return new_frame'''
 
 # Socketio serves under /
 app.mount('/', socket_app)
@@ -85,24 +93,15 @@ async def on_connectionstatechange():
             print("Track Kind:", track.kind)
     if pc.connectionState == "failed":
         await pc.close()
+        
+
 @pc.on("track")    
 def on_track(track):
     try:
         print('Track received in pc.on?!??!?!? ', track)
         video_track = VideoTransformTrack(relay.subscribe(track))
-        #await video_track.recv()
+        print(video_track)
         pc.addTrack(video_track)
-        added_tracks = pc.getReceivers()
-        
-        print("Added tracks:")
-        for sender in added_tracks:
-            track = sender.track
-            if track:
-                print("Track ID:", track.id)
-                print("Track Kind:", track.kind)
-                
-        # Print the added track
-        print("Track added to peer connection:", pc)
     except Exception as e:
         print('Tried pc.on, failed: ', e)
 

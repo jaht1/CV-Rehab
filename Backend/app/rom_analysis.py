@@ -194,13 +194,15 @@ def analyze_frame(frame):
             if measuring:
                 save_value(shoulder_string, 'C:\\yolo_pose\\Measurements.txt')'''
 
-        processed_frame = process_frame(frame)
-        return shoulder_string, processed_frame
+        return frame
+        '''processed_frame = process_frame(frame)
+        return shoulder_string, processed_frame'''
     except Exception as e:
         print('Something went wrong with the object detection: ', e)
         # Sends frame unprocessed if no angle could be detected to avoid interruptions on output stream
-        processed_frame = process_frame(frame)
-        return "", processed_frame
+        return frame
+        '''processed_frame = process_frame(frame)
+        return "", processed_frame'''
 
 def process_frame(frame):
     '''Function to process frame for sending back to client. Returns frame as bytes. '''
@@ -224,10 +226,10 @@ def process_frame(frame):
 
 
     
-def rom_analysis():
+def rom_analysis(cap):
     model = YOLO('yolov8n-pose.pt')  # load an official model
 
-    cap = cv2.VideoCapture(0)
+    #cap = cv2.VideoCapture(0)
 
     measuring = False
     left = False
@@ -412,7 +414,7 @@ def rom_analysis():
             if measuring:
                 save_value(shoulder_string, 'C:\\yolo_pose\\Measurements.txt')
 
-    cap.release()
+    #cap.release()
     
     # closing all open windows 
-    cv2.destroyAllWindows() 
+    #cv2.destroyAllWindows() 
