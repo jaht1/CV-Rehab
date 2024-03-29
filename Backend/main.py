@@ -22,7 +22,7 @@ router = APIRouter()
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
 
-#pcs = set()
+
 relay = MediaRelay()
 
 class VideoTransformTrack(MediaStreamTrack):
@@ -50,15 +50,6 @@ class VideoTransformTrack(MediaStreamTrack):
             new_frame.pts = frame.pts
             new_frame.time_base = frame.time_base
             return new_frame
-            '''img = frame.to_ndarray(format="bgr24")
-            frame_analyzed, _ = analyze_frame(img)
-            #img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
-
-            # rebuild a VideoFrame, preserving timing information
-            new_frame = VideoFrame.from_ndarray(frame_analyzed, format="bgr24")
-            new_frame.pts = frame.pts
-            new_frame.time_base = frame.time_base
-            return new_frame'''
 
 # Socketio serves under /
 app.mount('/', socket_app)
@@ -83,14 +74,6 @@ async def on_connectionstatechange():
     print('connections change')
     
     print("Connection state is %s", pc.connectionState)
-    added_tracks = pc.getSenders()
-
-    print("Added tracks:")
-    for sender in added_tracks:
-        track = sender.track
-        if track:
-            print("Track ID:", track.id)
-            print("Track Kind:", track.kind)
     if pc.connectionState == "failed":
         await pc.close()
         
@@ -106,18 +89,6 @@ def on_track(track):
         print('Tried pc.on, failed: ', e)
 
 
-    
-async def subscribe_track(track):
-    try:
-        print('in subscribe track...')
-        relay_track = await relay.subscribe(track)
-        print('Succesfully subscribing track!')
-        return relay_track
-    except Exception as e:
-        print('Error subscribing track:', e)
-        return None       
-
-
 
 @sio.on('offer')
 async def offer(sid, data):
@@ -130,10 +101,6 @@ async def offer(sid, data):
         sdp = data['sdp']
         
         offer = RTCSessionDescription(sdp=sdp, type=data["type"])
-        # Add video stream to the peer connection
-        #await pc.addTrack(MediaStreamTrack(kind="video"))
-        # Set the remote description
-        
         await pc.setRemoteDescription(offer)
         # Create an answer
         answer = await pc.createAnswer()
@@ -146,29 +113,7 @@ async def offer(sid, data):
         print('Problem with offer: ', e)
 
 
-    
-    
-def process_frame_for_analysis(frame):
-    '''Function to process frame for ROM analysis model. Processes it according to OpenCV standards. '''
-    nparr = np.frombuffer(frame, np.uint8)
-    print('processing frame for analysis')
-    # Use OpenCV to read the image data as an array (decode)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-    return frame
 
-"""@sio.on('process_frame')
-async def analysis(sid, frame):
-    ''' Function that receives a frame from the client '''
-    try:
-        frame = process_frame_for_analysis(frame)
-        # Server script
-        angle, frame_bytes = analyze_frame(frame)
-        
-        await sio.emit('response_back', frame_bytes, to=sid)
-    except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
-        raise"""
     
 @sio.on('print_setup')
 def print_setup(sid):

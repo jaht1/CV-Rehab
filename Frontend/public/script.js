@@ -1,16 +1,12 @@
-/* Initialize websocket connection to localhost server */
-// , { transports: ['websocket', 'polling']}
+
 
 const socket = io("http://localhost:5000");
 let pc = null;
+
+// Error logs 
 socket.on("connect_error", (err) => {
-  // the reason of the error, for example "xhr poll error"
   console.log(err.message);
-
-  // some additional description, for example the status code of the initial HTTP response
   console.log(err.description);
-
-  // some additional context, for example the XMLHttpRequest object
   console.log(err.context);
 });
 
@@ -22,10 +18,8 @@ socket.on("connect", function () {
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
-    //offerToReceiveAudio: false,
-    //offerToReceiveVideo: true,
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    //iceTransportPolicy: "relay",
+
   };
   pc = new RTCPeerConnection({
     configuration,
@@ -33,7 +27,6 @@ async function createPeerConnection() {
 
   addEventListeners();
   return pc;
-  // Set up the offer
 }
 
 function addEventListeners() {
@@ -42,6 +35,7 @@ function addEventListeners() {
     console.log("TRACK EVENT RECEIVED!!");
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
+    console.log('started stream at ', Date.now())
     // Handle track event...
   });
 
@@ -115,10 +109,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
   pc = await createPeerConnection();
 
-  /*video = document.getElementById("videoElement");
-  canvas = document.getElementById("canvasOutput");
-  context = canvas.getContext("2d");*/
-
   // Access user's webcam
   await navigator.mediaDevices
     .getUserMedia({
@@ -143,11 +133,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
       console.log("creating offer");
       return createOffer();
     })
-    .then(() => {
-      //console.log("PRINTING SETUP");
-      //console.log(pc.localDescription.sdp);
-      socket.emit("print_setup");
-    });
 });
 
 function addTrack(stream, pc) {
