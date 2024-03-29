@@ -68,27 +68,27 @@ window.addEventListener("beforeunload", function (event) {
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
-    offerToReceiveAudio: false,
-    offerToReceiveVideo: true,
+    //offerToReceiveAudio: false,
+    //offerToReceiveVideo: true,
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    iceTransportPolicy: "relay",
+    //iceTransportPolicy: "relay",
   };
   pc = new RTCPeerConnection({
     configuration,
   });
 
   addEventListeners();
+  return pc;
   // Set up the offer
 }
 
-
 function addEventListeners() {
-  pc.ontrack = e => {
-    console.log('pc.ontrack')
+  pc.ontrack = (e) => {
+    console.log("pc.ontrack");
     videoElement.srcObject = e.streams[0];
     hangupButton.disabled = false;
     return false;
-  }
+  };
 
   pc.addEventListener("track", function () {
     console.log("Track event received:");
@@ -97,6 +97,10 @@ function addEventListeners() {
 
   pc.addEventListener("icegatheringstatechange", function () {
     console.log("iceGatheringState:", pc.iceGatheringState);
+    if (pc.iceConnectionState === "connected") {
+      // ICE connection is established
+      console.log("ICE connection established.");
+    }
   });
 
   // Event listener for iceconnectionstatechange event
@@ -107,7 +111,7 @@ function addEventListeners() {
   // Event listener for signalingstatechange event
   pc.addEventListener("signalingstatechange", function () {
     console.log("signalingState:", pc.signalingState);
-    if (pc.signalingState == "closed") {
+    /*if (pc.signalingState == "closed") {
       console.log("SIGNALINGSTATE CLOSED. DELETING PC.");
       try {
         stream.getTracks().forEach((track) => {
@@ -116,11 +120,10 @@ function addEventListeners() {
       } catch (error) {
         console.log("couldnt clsoe track");
       }
-    }
+    }*/
   });
-
-
 }
+/*
 async function renegotiate() {
   try {
       // Create a new offer
@@ -135,15 +138,69 @@ async function renegotiate() {
   } catch (error) {
       console.error("Error during renegotiation:", error);
   }
-}
+}*/
 async function createOffer() {
   try {
+    console.log("in createOffer");
     // Create offer
+    return pc
+      .createOffer()
+      .then(function (offer) {
+        // set localdescription
+        return pc.setLocalDescription(offer);
+      })
+      .then(function () {
+        // wait for ICE gathering to complete - important!!
+        return new Promise(function (resolve) {
+          if (pc.iceGatheringState === "complete") {
+            // if ICE gathering is already complete - resolve immediately
+            resolve();
+          } else {
+            // wait for ice gathering to complete if not already
+            function checkState() {
+              if (pc.iceGatheringState === "complete") {
+                console.log('icegathering complete')
+                // If ICE gathering becomes complete, remove the listener and resolve
+                pc.removeEventListener("icegatheringstatechange", checkState);
+                resolve();
+              }
+            }
+            // event listener for ICE gathering state change
+            pc.addEventListener("icegatheringstatechange", checkState);
+          }
+        });
+      }).then(function() {
+        const { sdp, type } = pc.localDescription;
+        socket.emit("offer", { sdp, type });
+      })
 
-    const offer = await pc.createOffer();
+    const offer = await pc.createOffer().then(pc.setLocalDescription(offer));
+    console.log("set localdescription");
+    // Wait for ICE connection to be established
+    await new Promise((resolve) => {
+      console.log("Awaiting promise");
+      // Event listener for iceconnectionstatechange event
+      pc.addEventListener(
+        "iceconnectionstatechange",
+        function iceConnectionHandler() {
+          console.log("iceConnectionState:", pc.iceConnectionState);
+          if (pc.iceConnectionState === "complete") {
+            // ICE connection is established
+            console.log("ICE connection established.");
+            // Remove the event listener
+            pc.removeEventListener(
+              "iceconnectionstatechange",
+              iceConnectionHandler
+            );
+            // Resolve the promise to indicate that ICE connection is established
+            resolve();
+          }
+        }
+      );
+    });
 
     // Set local description
-    await pc.setLocalDescription(offer);
+    //await pc.setLocalDescription(offer);
     console.log("Inside createoffer !!!");
     // Send the offer to the server
     const { sdp, type } = pc.localDescription;
@@ -156,7 +213,7 @@ async function createOffer() {
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
-  await createPeerConnection();
+  pc = await createPeerConnection();
 
   /*video = document.getElementById("videoElement");
   canvas = document.getElementById("canvasOutput");
@@ -179,6 +236,7 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
         pc.addTrack(track, stream);
+        console.log("local video: ", track);
       });
     })
     .then(() => {

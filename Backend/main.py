@@ -50,19 +50,20 @@ class VideoTransformTrack(MediaStreamTrack):
         print('init!!')
 
     async def recv(self):
-        try:
-            print('in recv....')
-            frame = await self.track.recv()
-            if frame:
-                print('Track received! Try to make changes to it')
+        print('in recv....')
+        frame = await self.track.recv()
+        if frame:
+            print('Track received! Try to make changes to it')
 
-                img = frame.to_ndarray(format="bgr24")
-                frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                angle, frame = analyze_frame(frame)
-                print('Succesfully processed frame before analysis')
-                return frame
-            else:
-                raise MediaStreamError()
+            img = frame.to_ndarray(format="bgr24")
+            img = cv2.flip(img, 1)
+            return img
+            frame_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            angle, frame = analyze_frame(frame)
+            print('Succesfully processed frame before analysis')
+            return frame
+
+                
             '''print('Track received! Try to make changes to it')
 
             img = frame.to_ndarray(format="bgr24")
@@ -70,8 +71,6 @@ class VideoTransformTrack(MediaStreamTrack):
             angle, frame = analyze_frame(frame)
             print('Succesfully processed frame before analysis')
             return frame'''
-        except Exception as e:
-            print('Something went wrong with processing the frame: ', e)
     
         
         
@@ -125,27 +124,7 @@ async def subscribe_track(track):
         print('Error subscribing track:', e)
         return None       
 
-@pc.on("track")    
-async def on_track(track):
-    try:
-        print('Track received in pc.on?!??!?!? ', track)
-        relay_track = await subscribe_track(track)
-        if relay_track:
-            video_transform_track = VideoTransformTrack(relay_track)
-            print('Video transform track: ', video_transform_track)
-            pc.addTrack(video_transform_track)
-            print('Track added successfully', track.kind)
-        else:
-            print('Failed to add track', track)
-    except Exception as e:
-        print('Tried pc.on, failed: ', e)
 
-@pc.on("datachannel")
-def on_datachannel(channel):
-    @channel.on("video")
-    def on_message(message):
-        if isinstance(message, str) and message.startswith("ping"):
-            channel.send("pong" + message[4:])
 
 '''@sio.on("icecandidate")
 async def handle_icecandidate(sid, data):
@@ -164,6 +143,24 @@ async def offer(sid, data):
         # Add video stream to the peer connection
         #await pc.addTrack(MediaStreamTrack(kind="video"))
         # Set the remote description
+        @pc.on("track")    
+        async def on_track(track):
+            try:
+                print('Track received in pc.on?!??!?!? ', track)
+                video_track = VideoTransformTrack(relay.subscribe(track))
+                pc.addTrack(video_track)
+
+                # Print the added track
+                print("Track added to peer connection:", video_track)
+            except Exception as e:
+                print('Tried pc.on, failed: ', e)
+
+        @pc.on("datachannel")
+        def on_datachannel(channel):
+            @channel.on("video")
+            def on_message(message):
+                if isinstance(message, str) and message.startswith("ping"):
+                    channel.send("pong" + message[4:])
         await pc.setRemoteDescription(offer)
         # Create an answer
         answer = await pc.createAnswer()
