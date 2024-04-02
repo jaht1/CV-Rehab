@@ -47,7 +47,7 @@ class VideoTransformTrack(MediaStreamTrack):
             #resized_frame = cv2.resize(np_frame, (640, 480))
             processed_frame = analyze_frame(np_frame)
             # Convert processed numpy array back to VideoFrame
-            
+            #processed_frame = cv2.flip(np_frame, 1)
             # Create a new VideoFrame object from frame
             new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
             # Set time stamps to display frame in real-time

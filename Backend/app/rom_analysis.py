@@ -8,7 +8,6 @@ model = YOLO('yolov8n-pose.pt')  # load an official model
 
 def analyze_frame(frame):
     try:
-        #TODO: in case of unexpected errors, switch back to measuring = False
         measuring = False
         left = False
 
@@ -136,7 +135,7 @@ def analyze_frame(frame):
         '''if not ret:
             break'''
 
-        frame = cv2.resize(frame, None, fx=1.6, fy=1.6, interpolation = cv2.INTER_NEAREST)
+        #frame = cv2.resize(frame, None, fx=1.6, fy=1.6, interpolation = cv2.INTER_NEAREST)
 
         draw_cross(frame, [frame.shape[1]/2, frame.shape[0]/2], 100)
         

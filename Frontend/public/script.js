@@ -112,7 +112,8 @@ document.addEventListener("DOMContentLoaded", async (event) => {
   await navigator.mediaDevices
     .getUserMedia({
       audio: false,
-      video: true,
+      video: {frameRate: { ideal: 10, max: 10 }, // frame rate constraints
+    },
     })
     .then((stream) => {
       // Stream user's video
