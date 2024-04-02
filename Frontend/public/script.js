@@ -35,7 +35,7 @@ function addEventListeners() {
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
     console.log('started stream at ', Date.now())
-    connectionOutput("Connected!")
+    connectionOutput("connected")
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -53,7 +53,7 @@ function addEventListeners() {
   pc.addEventListener("connectionstatechange", (event) => {
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
-      connectionOutput("")
+      
     }
   });
   // Event listener for signalingstatechange event
@@ -103,9 +103,20 @@ async function createOffer() {
   }
 }
 
-function connectionOutput(text) {
+function connectionOutput(status) {
   const connectionStatus = document.getElementById("connectionStatus");
-  connectionStatus.textContent = text
+  if (status == 'connecting'){
+    
+    connectionStatus.innerHTML = `<div class="spinner-container">
+    <div class="spinner-border text-primary" role="status"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+  `
+  }
+  if (status == 'connected'){
+    
+    connectionStatus.innerHTML = ``
+  }
 }
 
 // Wait for website to be loaded
@@ -123,7 +134,7 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-      connectionOutput("Connecting web camera...")
+      connectionOutput("connecting")
 /*
       const videoElement = document.getElementById("videoElement");
       videoElement.srcObject = stream;*/
@@ -141,31 +152,6 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     })
 });
 
-function addTrack(stream, pc) {
-  /**
-   * Function to add stream to PC
-   * Waits for the stream to be added
-   */
-  return new Promise((resolve, reject) => {
-    stream.getTracks().forEach((track) => pc.addTrack(track));
-    setTimeout(() => {
-      const senders = pc.getSenders();
-      const videoTrack = senders.find(
-        (sender) => sender.track && sender.track.kind === "video"
-      );
-
-      if (videoTrack) {
-        console.log("Found video track:", videoTrack.track);
-        resolve(videoTrack.track);
-      } else {
-        console.log("No video tracks found");
-        reject(new Error("No video tracks found"));
-      }
-    }, 1000);
-    // Once all tracks are added, resolve the Promise
-    resolve();
-  });
-}
 
 socket.on("answer", function (data) {
   /**
@@ -178,34 +164,8 @@ socket.on("answer", function (data) {
       console.log("Remote description set successfully!", answer);
       //console.log("Received answer from server:", answer);
     })
-    /*
-    .then(() => {
-      const receivers = pc.getReceivers();
-
-      console.log("Remote tracks:");
-      receivers.forEach((receiver) => {
-        console.log("Sender track:", receiver.track);
-        if (receiver.track.kind === "video") {
-          //const videoElement = document.getElementById("remoteVideo");
-          //videoElement.srcObject = new MediaStream([receiver.track]);
-        }
-      });
-    })*/
     .catch((error) => {
       console.error("Error setting remote description:", error);
     });
 });
 
-function test() {
-  const senders = pc.getSenders();
-
-  // Access specific track (assuming one video track)
-  const videoTrack = senders.find((sender) => sender.kind === "video");
-
-  if (videoTrack) {
-    console.log("Found video track:", videoTrack);
-    // You can access track properties or manipulate the track here
-  } else {
-    console.log("No video track found");
-  }
-}
