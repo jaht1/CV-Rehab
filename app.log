@@ -1,0 +1,23 @@
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+ERROR:root:An error occurred
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.57.70 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.212.42 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.66.191 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.204.161 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.110.218 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Could not bind to 169.254.72.160 - [WinError 10049] The requested address is not valid in its context
+INFO:aioice.ice:Connection(0) Check CandidatePair(('10.133.198.58', 49515) -> ('192.168.50.145', 49512)) State.FROZEN -> State.WAITING
+INFO:aioice.ice:Connection(0) Check CandidatePair(('192.168.50.145', 49516) -> ('192.168.50.145', 49512)) State.FROZEN -> State.WAITING
+INFO:aioice.ice:Connection(0) Check CandidatePair(('10.133.198.58', 49515) -> ('10.133.198.58', 49511)) State.FROZEN -> State.WAITING
+INFO:aioice.ice:Connection(0) Check CandidatePair(('10.133.198.58', 49515) -> ('192.168.50.145', 49512)) State.WAITING -> State.IN_PROGRESS
+INFO:aioice.ice:Connection(0) Check CandidatePair(('192.168.50.145', 49516) -> ('192.168.50.145', 49512)) State.WAITING -> State.IN_PROGRESS
+INFO:aioice.ice:Connection(0) Check CandidatePair(('192.168.50.145', 49516) -> ('192.168.50.145', 49512)) State.IN_PROGRESS -> State.SUCCEEDED
+INFO:aioice.ice:Connection(0) Check CandidatePair(('10.133.198.58', 49515) -> ('10.133.198.58', 49511)) State.WAITING -> State.FAILED
+INFO:aioice.ice:Connection(0) Check CandidatePair(('192.168.50.145', 49516) -> ('10.133.198.58', 49511)) State.FROZEN -> State.FAILED
+INFO:aioice.ice:Connection(0) ICE completed

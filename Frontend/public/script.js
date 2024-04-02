@@ -1,15 +1,12 @@
-/* Initialize websocket connection to localhost server */
-// , { transports: ['websocket', 'polling']}
+
+
 const socket = io("http://localhost:5000");
+let pc = null;
 
+// Error logs 
 socket.on("connect_error", (err) => {
-  // the reason of the error, for example "xhr poll error"
   console.log(err.message);
-
-  // some additional description, for example the status code of the initial HTTP response
   console.log(err.description);
-
-  // some additional context, for example the XMLHttpRequest object
   console.log(err.context);
 });
 
@@ -18,87 +15,196 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-/* Access web camera from index.html */
-// Ask user permission
-if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices
-    .getUserMedia({ video: true })
-    .then(function (stream) {
+async function createPeerConnection() {
+  // create a peer connection
+  var configuration = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+
+  };
+  pc = new RTCPeerConnection({
+    configuration,
+  });
+
+  addEventListeners();
+  return pc;
+}
+
+function addEventListeners() {
+
+  pc.addEventListener("track", function (event) {
+    console.log(event.streams[0])
+    document.getElementById('remoteVideo').srcObject = event.streams[0];
+    console.log('started stream at ', Date.now())
+    connectionOutput("")
+  });
+
+  pc.addEventListener("icegatheringstatechange", function () {
+    console.log("iceGatheringState:", pc.iceGatheringState);
+    if (pc.iceConnectionState === "connected") {
+      // ICE connection is established
+      console.log("ICE connection established.");
+    }
+  });
+
+  // Event listener for iceconnectionstatechange event
+  pc.addEventListener("iceconnectionstatechange", function () {
+    console.log("iceConnectionState:", pc.iceConnectionState);
+  });
+  pc.addEventListener("connectionstatechange", (event) => {
+    if (pc.connectionState === "connected") {
+      console.log("peers connected!");
+    }
+  });
+  // Event listener for signalingstatechange event
+  pc.addEventListener("signalingstatechange", function () {
+    console.log("signalingState:", pc.signalingState);
+ 
+  });
+}
+
+async function createOffer() {
+  try {
+    console.log("in createOffer");
+    // Create offer
+    return pc
+      .createOffer({offerToReceiveAudio: false, offerToReceiveVideo: true})
+      .then(function (offer) {
+        // set localdescription
+        return pc.setLocalDescription(offer);
+      })
+      .then(function () {
+        // wait for ICE gathering to complete - important!
+        return new Promise(function (resolve) {
+          if (pc.iceGatheringState === "complete") {
+            // if ICE gathering is already complete - resolve immediately
+            resolve();
+          } else {
+            // wait for ice gathering to complete if not already
+            function checkState() {
+              if (pc.iceGatheringState === "complete") {
+                console.log("icegathering complete");
+                // If ICE gathering becomes complete, remove the listener and resolve
+                pc.removeEventListener("icegatheringstatechange", checkState);
+                resolve();
+              }
+            }
+            // event listener for ICE gathering state change
+            pc.addEventListener("icegatheringstatechange", checkState);
+          }
+        });
+      })
+      .then(function () {
+        const { sdp, type } = pc.localDescription;
+        socket.emit("offer", { sdp, type });
+      });
+  } catch (error) {
+    console.error("Error creating offer and setting local description:", error);
+  }
+}
+
+function connectionOutput(text) {
+  const connectionStatus = document.getElementById("connectionStatus");
+  connectionStatus.textContent = text
+}
+
+// Wait for website to be loaded
+document.addEventListener("DOMContentLoaded", async (event) => {
+  console.log("DOM loaded");
+  pc = await createPeerConnection();
+
+  // Access user's webcam
+  await navigator.mediaDevices
+    .getUserMedia({
+      audio: false,
+      video: {frameRate: { ideal: 10, max: 10 }, // frame rate constraints
+    },
+    })
+    .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-      video.srcObject = stream;
-      video.play();
+      connectionOutput("Connecting web camera...")
+/*
+      const videoElement = document.getElementById("videoElement");
+      videoElement.srcObject = stream;*/
+      return stream;
     })
-    .catch(function (err0r) {
-      console.log(err0r);
-      console.log("Something went wrong!");
-    });
-}
-var startTime = null;
-var endTime = null;
-let video, canvas, context;
-const reader = new FileReader();
-const frameOutput = document.getElementById("frameOutput");
-
-const convertToBinary = (frameData) => {};
-
-const captureVideoFrame = () => {
-  framerate = 10
-  context.drawImage(video, 0, 0, video.clientWidth, video.clientHeight);
-  canvas = document.getElementById("canvasOutput");
-  var imageArrayBuffer;
-  canvas.toBlob(function(blob) {
-    
-    reader.onloadend = function() {
-        imageArrayBuffer = reader.result;
-        socket.emit("process_frame", imageArrayBuffer);
-    };
-    reader.readAsArrayBuffer(blob);
-}, 'image/png');
-startTime = performance.now();
-  socket.emit("process_frame", imageArrayBuffer);
-  
-};
-
-// TODO: fix blob
-function displayProcessedFrame(frame) {
-  // Revoke the previous object URL to free up memory
-  if (frameOutput.src) {
-    URL.revokeObjectURL(frameOutput.src);
-  }
-  var blob = new Blob([frame], { type: "image/png" });
-  // Create an object URL for blob
-  var frameData = URL.createObjectURL(blob);
-
-  // Display blob
-  frameOutput.src = frameData;
-  
-}
-
-/* Video frame processing */
-// Wait for website to be loaded
-document.addEventListener("DOMContentLoaded", (event) => {
-  video = document.getElementById("videoElement");
-  canvas = document.getElementById("canvasOutput");
-  context = canvas.getContext("2d");
-
-  video.addEventListener("loadedmetadata", () => {
-    // Set canvas dimensions once based on the video element
-    canvas.width = video.clientWidth;
-    canvas.height = video.clientHeight;
-    console.log("metadata");
-    
-    captureVideoFrame();
-  });
-  socket.on("response_back", function (frame) {
-    endTime = performance.now(); // End timing
-
-    //console.log(`Response received in ${(endTime - startTime) / 1000} seconds`);
-    displayProcessedFrame(frame);
-    captureVideoFrame();
-  });
-  socket.on("print_response", function (degreeStr) {
-    console.log("got response " + string);
-    document.getElementById("degreeOutput").innerHTML = degreeStr;
-  });
+    .then((stream) => {
+      stream.getTracks().forEach(function (track) {
+        pc.addTrack(track, stream);
+        console.log("local video: ", track);
+      });
+    })
+    .then(() => {
+      console.log("creating offer");
+      return createOffer();
+    })
 });
+
+function addTrack(stream, pc) {
+  /**
+   * Function to add stream to PC
+   * Waits for the stream to be added
+   */
+  return new Promise((resolve, reject) => {
+    stream.getTracks().forEach((track) => pc.addTrack(track));
+    setTimeout(() => {
+      const senders = pc.getSenders();
+      const videoTrack = senders.find(
+        (sender) => sender.track && sender.track.kind === "video"
+      );
+
+      if (videoTrack) {
+        console.log("Found video track:", videoTrack.track);
+        resolve(videoTrack.track);
+      } else {
+        console.log("No video tracks found");
+        reject(new Error("No video tracks found"));
+      }
+    }, 1000);
+    // Once all tracks are added, resolve the Promise
+    resolve();
+  });
+}
+
+socket.on("answer", function (data) {
+  /**
+   * Function that receives offer back from server
+   *
+   */
+  const answer = new RTCSessionDescription(data);
+  pc.setRemoteDescription(answer)
+    .then(() => {
+      console.log("Remote description set successfully!", answer);
+      //console.log("Received answer from server:", answer);
+    })
+    /*
+    .then(() => {
+      const receivers = pc.getReceivers();
+
+      console.log("Remote tracks:");
+      receivers.forEach((receiver) => {
+        console.log("Sender track:", receiver.track);
+        if (receiver.track.kind === "video") {
+          //const videoElement = document.getElementById("remoteVideo");
+          //videoElement.srcObject = new MediaStream([receiver.track]);
+        }
+      });
+    })*/
+    .catch((error) => {
+      console.error("Error setting remote description:", error);
+    });
+});
+
+function test() {
+  const senders = pc.getSenders();
+
+  // Access specific track (assuming one video track)
+  const videoTrack = senders.find((sender) => sender.kind === "video");
+
+  if (videoTrack) {
+    console.log("Found video track:", videoTrack);
+    // You can access track properties or manipulate the track here
+  } else {
+    console.log("No video track found");
+  }
+}
