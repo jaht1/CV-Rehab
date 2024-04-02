@@ -1,3 +1,8 @@
+
+.container {
+    justify-content: center;
+}
+
 .videoElement {
     display:none;
 }
