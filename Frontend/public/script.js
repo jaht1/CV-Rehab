@@ -74,7 +74,7 @@ async function createOffer() {
         return pc.setLocalDescription(offer);
       })
       .then(function () {
-        // wait for ICE gathering to complete - important!!
+        // wait for ICE gathering to complete - important!
         return new Promise(function (resolve) {
           if (pc.iceGatheringState === "complete") {
             // if ICE gathering is already complete - resolve immediately
@@ -104,7 +104,6 @@ async function createOffer() {
 }
 
 // Wait for website to be loaded
-
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
   pc = await createPeerConnection();
@@ -172,6 +171,7 @@ socket.on("answer", function (data) {
       console.log("Remote description set successfully!", answer);
       //console.log("Received answer from server:", answer);
     })
+    /*
     .then(() => {
       const receivers = pc.getReceivers();
 
@@ -183,7 +183,7 @@ socket.on("answer", function (data) {
           //videoElement.srcObject = new MediaStream([receiver.track]);
         }
       });
-    })
+    })*/
     .catch((error) => {
       console.error("Error setting remote description:", error);
     });

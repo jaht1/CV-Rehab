@@ -136,7 +136,7 @@ def analyze_frame(frame):
         '''if not ret:
             break'''
 
-        #frame = cv2.resize(frame, None, fx=1.6, fy=1.6, interpolation = cv2.INTER_NEAREST)
+        frame = cv2.resize(frame, None, fx=1.6, fy=1.6, interpolation = cv2.INTER_NEAREST)
 
         draw_cross(frame, [frame.shape[1]/2, frame.shape[0]/2], 100)
         
@@ -159,7 +159,7 @@ def analyze_frame(frame):
 
             angle = 0
             
-            choose_side(frame, left_wrist, right_wrist)
+            #choose_side(frame, left_wrist, right_wrist)
 
             shoulderMidPoint, hipMidPoint = get_mid_points(left_shoulder, right_shoulder, left_hip, right_hip)
             
@@ -223,7 +223,7 @@ def process_frame(frame):
 
 
 
-
+'''
 
     
 def rom_analysis(cap):
@@ -413,7 +413,7 @@ def rom_analysis(cap):
         if key == 13:
             if measuring:
                 save_value(shoulder_string, 'C:\\yolo_pose\\Measurements.txt')
-
+'''
     #cap.release()
     
     # closing all open windows 

@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 import socketio
 import logging
-from app.rom_analysis import analyze_frame, rom_analysis
+from app.rom_analysis import analyze_frame
 import cv2
 import numpy as np
 import json
@@ -32,9 +32,8 @@ class VideoTransformTrack(MediaStreamTrack):
     kind = "video"
 
     def __init__(self, track):
-        super().__init__()  # Call the constructor of the base class
+        super().__init__()  
         self.track = track
-        #self.transform = transform
         print('init!!', track)
 
     async def recv(self):
@@ -44,9 +43,14 @@ class VideoTransformTrack(MediaStreamTrack):
             print('Track received! Try to make changes to it')
             # Convert to numpy array for analysis
             np_frame = frame.to_ndarray(format="bgr24")
+            
+            #resized_frame = cv2.resize(np_frame, (640, 480))
             processed_frame = analyze_frame(np_frame)
             # Convert processed numpy array back to VideoFrame
+            
+            # Create a new VideoFrame object from frame
             new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
+            # Set time stamps to display frame in real-time
             new_frame.pts = frame.pts
             new_frame.time_base = frame.time_base
             return new_frame
@@ -68,14 +72,6 @@ app.add_middleware(
 
 
 pc = RTCPeerConnection()
-
-@pc.on("connectionstatechange")
-async def on_connectionstatechange():
-    print('connections change')
-    
-    print("Connection state is %s", pc.connectionState)
-    if pc.connectionState == "failed":
-        await pc.close()
         
 
 @pc.on("track")    
