@@ -32,11 +32,10 @@ async function createPeerConnection() {
 function addEventListeners() {
 
   pc.addEventListener("track", function (event) {
-    console.log("TRACK EVENT RECEIVED!!");
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
     console.log('started stream at ', Date.now())
-    // Handle track event...
+    connectionOutput("")
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -103,6 +102,11 @@ async function createOffer() {
   }
 }
 
+function connectionOutput(text) {
+  const connectionStatus = document.getElementById("connectionStatus");
+  connectionStatus.textContent = text
+}
+
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
@@ -118,9 +122,10 @@ document.addEventListener("DOMContentLoaded", async (event) => {
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-
+      connectionOutput("Connecting web camera...")
+/*
       const videoElement = document.getElementById("videoElement");
-      videoElement.srcObject = stream;
+      videoElement.srcObject = stream;*/
       return stream;
     })
     .then((stream) => {

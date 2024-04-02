@@ -34,13 +34,10 @@ class VideoTransformTrack(MediaStreamTrack):
     def __init__(self, track):
         super().__init__()  
         self.track = track
-        print('init!!', track)
 
     async def recv(self):
-        print('in recv....')
         frame = await self.track.recv()
         if frame:
-            print('Track received! Try to make changes to it')
             # Convert to numpy array for analysis
             np_frame = frame.to_ndarray(format="bgr24")
             
@@ -77,7 +74,6 @@ pc = RTCPeerConnection()
 @pc.on("track")    
 def on_track(track):
     try:
-        print('Track received in pc.on?!??!?!? ', track)
         video_track = VideoTransformTrack(relay.subscribe(track))
         print(video_track)
         pc.addTrack(video_track)
@@ -110,28 +106,16 @@ async def offer(sid, data):
 
 
 
-    
-@sio.on('print_setup')
-def print_setup(sid):
-    print('PC: ', pc.localDescription.sdp)
-    # Print added tracks
-    added_tracks = pc.getSenders()
-    print("Added Tracks:", added_tracks)
-    print('sender len ' + len(sender))
-    for sender in added_tracks:
-        track = sender.track
-        if track:
-            print("Track ID:", track.id)
-            print("Track Kind:", track.kind)
+
     
         
 @sio.on("connect")
 async def connect(sid, env):
-    print("New Client Connected to This id :"+" "+str(sid))
+    print("New Client Connected to This id : ", str(sid))
     
 @sio.on("disconnect")
 async def disconnect(sid):
-    print("Client Disconnected: "+" "+str(sid))
+    print("Client Disconnected: ", str(sid))
     
     await pc.close()
     print('closed pc : ', pc)
