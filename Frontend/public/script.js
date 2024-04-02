@@ -35,7 +35,7 @@ function addEventListeners() {
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
     console.log('started stream at ', Date.now())
-    connectionOutput("")
+    connectionOutput("Connected!")
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -53,6 +53,7 @@ function addEventListeners() {
   pc.addEventListener("connectionstatechange", (event) => {
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
+      connectionOutput("")
     }
   });
   // Event listener for signalingstatechange event

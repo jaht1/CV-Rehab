@@ -78,7 +78,7 @@ def on_track(track):
         print(video_track)
         pc.addTrack(video_track)
     except Exception as e:
-        print('Tried pc.on, failed: ', e)
+        print('Peerconnection track failed: ', e)
 
 
 
