@@ -24,29 +24,23 @@
         <h2>Detection</h2>
         <p id="status">Choose which shoulder to calculate angle on</p>
 
-        <div id="formWrapper">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="radio"
-              id="left"
-              name="shoulder"
-            />
-            <label class="form-check-label" for="left">Left</label><br />
+        <div id="switchShoulders">
+          <div class="alert alert-info" role="alert">
+            Switch shoulder to measure from the buttons below
           </div>
-
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="radio"
-              id="right"
-              name="shoulder"
-            />
-
-            <label class="form-check-label" for="right">Right</label><br />
-          </div>
-          <button onclick="start()" class="btn btn-primary">
-            Start detection
+          <button
+            onclick="start(this.id)"
+            class="btn btn-outline-primary"
+            id="left"
+          >
+            Left
+          </button>
+          <button
+            onclick="start(this.id)"
+            class="btn btn-outline-primary"
+            id="right"
+          >
+            Right
           </button>
         </div>
 
@@ -57,25 +51,7 @@
         <div class="ratio ratio-16x9">
           <video id="remoteVideo" autoplay playsinline></video>
         </div>
-        <div id="switchShoulders">
-          <div class="alert alert-info" role="alert">
-            Switch shoulder to measure from the buttons below
-          </div>
-          <button
-            onclick="switchShoulder(this.id)"
-            class="btn btn-outline-primary"
-            id="left"
-          >
-            Left
-          </button>
-          <button
-            onclick="switchShoulder(this.id)"
-            class="btn btn-outline-primary"
-            id="right"
-          >
-            Right
-          </button>
-        </div>
+        
       </div>
     </div>
   </body>

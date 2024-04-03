@@ -1,6 +1,6 @@
 const socket = io("http://localhost:5000");
 let pc = null;
-let shoulder;
+let shoulder = null;
 // Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -13,16 +13,6 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-function hideForm() {
-  /**
-   * Hides form after video is displayed and replaces with status
-   */
-  var form = document.getElementById("formWrapper");
-  form.style.display = "none";
-  var status = document.getElementById("status");
-  console.log("shoulder: " + shoulder);
-  status.textContent = "Measuring " + shoulder + " shoulder";
-}
 
 async function createPeerConnection() {
   // create a peer connection
@@ -71,51 +61,95 @@ function displayStream(event) {
    */
   var remoteVideo = document.getElementById("remoteVideo");
   remoteVideo.srcObject = event.streams[0];
-  // Hide form from website
-  hideForm();
 }
 
+async function switchShoulder(shoulder) {
+  /**
+   * Function to switch shoulder
+   */
+  console.log("switching shoulder..");
+  // Stop existing tracks
+  // Get existing senders and remove them from the connection
+  const senders = await pc.getSenders();
+  // Remove each track from the peer connection
+  await Promise.all(senders.map((sender) => pc.removeTrack(sender)));
+  console.log("removed track");
+}
 
-async function start() {
-  // Check if any of the radio buttons are checked
-  var leftChecked = document.getElementById("left").checked;
-  var rightChecked = document.getElementById("right").checked;
+async function replaceTrack(newTrack) {
+ /**
+  * Function that replaces previous tracks with current
+  */
+  const senders = pc.getSenders();
 
-  if (leftChecked == true) {
-    shoulder = "left";
-  } else {
-    shoulder = "right";
+  // Loop through the senders
+  // track associated with the track you want to replace
+  senders.forEach(async (sender) => {
+    // Check if the sender's track matches the one you want to replace
+    if (sender.track && sender.track.id === trackToReplace.id) {
+      try {
+        // Replace the track with the new one
+        await sender.replaceTrack(newTrack);
+        console.log('Track replaced successfully');
+      } catch (error) {
+        console.error('Error replacing track:', error);
+      }
+    }
+  });
+}
+
+async function start(shoulder_choice) {
+  /**
+   * Function that initiates the peer connection
+   * Communicates with the backend through sockets
+   */
+
+  // Boolean to check if track is being added for the first time
+  initializing = false;
+
+  // Check for first initialization
+  if (shoulder == null) {
+    pc = await createPeerConnection();
+    initializing = true;
   }
-
+  shoulder = shoulder_choice;
   // Assign shoulder choice in backend
   socket.emit("assign_shoulder", shoulder);
-  pc = await createPeerConnection();
+
   // Access user's webcam
   await navigator.mediaDevices
     .getUserMedia({
       audio: false,
       video: {
-        frameRate: { ideal: 10, max: 10 }, // frame rate constraints
+        frameRate: { ideal: 10, max: 10 }, // frame rate constraints, these can eventually be increased
       },
     })
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-      connectionOutput("connecting");
-      /*
-      const videoElement = document.getElementById("videoElement");
-      videoElement.srcObject = stream;*/
       return stream;
     })
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
-        pc.addTrack(track, stream);
-        console.log('adding track...')
+        // First time detection
+        if (initializing == true) {
+          pc.addTrack(track, stream);
+          console.log("adding track...");
+        } 
+        // Redetection
+        else {
+          // If detection is already ongoing, replace tracks with new
+          replaceTrack(track);
+        }
       });
     })
     .then(() => {
-      console.log("creating offer");
-      return createOffer();
+      // Create offer only if start is clicked for the first time
+      if (initializing == true) {
+        connectionOutput("connecting");
+        console.log("creating offer");
+        return createOffer();
+      }
     });
 }
 
@@ -126,7 +160,6 @@ async function createOffer() {
     return pc
       .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
       .then(function (offer) {
-        // set localdescription
         return pc.setLocalDescription(offer);
       })
       .then(function () {
@@ -160,6 +193,9 @@ async function createOffer() {
 }
 
 function connectionOutput(status) {
+  /**
+   * Function to display the current connection status for the client
+   */
   const connectionStatus = document.getElementById("connectionStatus");
   if (status == "connecting") {
     connectionStatus.innerHTML = `<div class="spinner-container">
@@ -170,7 +206,6 @@ function connectionOutput(status) {
   }
   if (status == "connected") {
     connectionStatus.innerHTML = ``;
-    document.getElementById("switchShoulders").style.visibility = "visible";
   }
 }
 
@@ -178,7 +213,6 @@ function connectionOutput(status) {
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
   // Check for page refresh - empty peer connection
-  
 });
 
 socket.on("answer", function (data) {
@@ -190,31 +224,30 @@ socket.on("answer", function (data) {
   pc.setRemoteDescription(answer)
     .then(() => {
       console.log("Remote description set successfully!", answer);
-      //console.log("Received answer from server:", answer);
     })
     .catch((error) => {
       console.error("Error setting remote description:", error);
     });
 });
-
-window.addEventListener('beforeunload', async function(event) {
+/*
+window.addEventListener("beforeunload", async function (event) {
   // Empty PC on apge refresh
   event.preventDefault(); // This line is optional
   //socket.emit('pc_reset')
-  resetPeerConnection()
-  return event.returnValue = 'Are you sure you want to leave this page?';
+  resetPeerConnection();
+  return (event.returnValue = "Are you sure you want to leave this page?");
 });
 
-
-async function resetPeerConnection(){
-  await pc.getSenders().forEach(sender => {
+async function resetPeerConnection() {
+  await pc.getSenders().forEach((sender) => {
     if (sender.track) {
       sender.track.stop();
     }
   });
-  console.log('Peerconnection reset')
+  console.log("Peerconnection reset");
   // Close the RTCPeerConnection instance
   await pc.close();
 
   // Create a new RTCPeerConnection instance
 }
+*/

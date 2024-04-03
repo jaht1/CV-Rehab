@@ -5,8 +5,7 @@ body {
 
 #switchShoulders {
     text-align: center;
-    /*display: none;*/
-    visibility: hidden;
+    
 }
 
 /* Remember to check bootstrap default 

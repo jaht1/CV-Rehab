@@ -83,6 +83,7 @@ def on_track(track):
     except Exception as e:
         print('Peerconnection track failed: ', e)
 
+
 @sio.on('assign_shoulder')
 def assign_shoulder(sid, shoulder_choice):
     ''' Function that receives shoulder choice from the client. '''
