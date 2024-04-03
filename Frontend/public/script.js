@@ -62,9 +62,36 @@ function addEventListeners() {
   });
 }
 
-function start(){
+async function start(){
   //document.getElementById("shoulder").innerHTML = "Hello World";
-  document.write('works');
+  pc = await createPeerConnection();
+
+  // Access user's webcam
+  await navigator.mediaDevices
+    .getUserMedia({
+      audio: false,
+      video: {frameRate: { ideal: 10, max: 10 }, // frame rate constraints
+    },
+    })
+    .then((stream) => {
+      // Stream user's video
+      console.log("Got user permission for camera");
+      connectionOutput("connecting")
+/*
+      const videoElement = document.getElementById("videoElement");
+      videoElement.srcObject = stream;*/
+      return stream;
+    })
+    .then((stream) => {
+      stream.getTracks().forEach(function (track) {
+        pc.addTrack(track, stream);
+        console.log("local video: ", track);
+      });
+    })
+    .then(() => {
+      console.log("creating offer");
+      return createOffer();
+    })
 }
 
 async function createOffer() {
@@ -126,34 +153,7 @@ function connectionOutput(status) {
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
-  pc = await createPeerConnection();
-
-  // Access user's webcam
-  await navigator.mediaDevices
-    .getUserMedia({
-      audio: false,
-      video: {frameRate: { ideal: 10, max: 10 }, // frame rate constraints
-    },
-    })
-    .then((stream) => {
-      // Stream user's video
-      console.log("Got user permission for camera");
-      connectionOutput("connecting")
-/*
-      const videoElement = document.getElementById("videoElement");
-      videoElement.srcObject = stream;*/
-      return stream;
-    })
-    .then((stream) => {
-      stream.getTracks().forEach(function (track) {
-        pc.addTrack(track, stream);
-        console.log("local video: ", track);
-      });
-    })
-    .then(() => {
-      console.log("creating offer");
-      return createOffer();
-    })
+  
 });
 
 
