@@ -21,7 +21,7 @@ app = FastAPI()
 router = APIRouter()
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
-
+shoulder = ''
 
 relay = MediaRelay()
 
@@ -42,7 +42,7 @@ class VideoTransformTrack(MediaStreamTrack):
             np_frame = frame.to_ndarray(format="bgr24")
             
             #resized_frame = cv2.resize(np_frame, (640, 480))
-            processed_frame = analyze_frame(np_frame)
+            processed_frame = analyze_frame(np_frame, shoulder)
             # Convert processed numpy array back to VideoFrame
             #processed_frame = cv2.flip(np_frame, 1)
             # Create a new VideoFrame object from frame
@@ -80,7 +80,19 @@ def on_track(track):
     except Exception as e:
         print('Peerconnection track failed: ', e)
 
-
+@sio.on('assign_shoulder')
+def assign_shoulder(sid, shoulder_choice):
+    try:
+        print('inside shoulder function')
+        global shoulder
+        if shoulder_choice == 'left':
+            shoulder = 'left'
+        else:
+            shoulder = 'right'
+        print('Shoulder: ', shoulder)
+        return
+    except Exception as e:
+        print('Error assigning shoulder: ', e)
 
 @sio.on('offer')
 async def offer(sid, data):

@@ -63,9 +63,23 @@ function addEventListeners() {
 }
 
 async function start(){
-  //document.getElementById("shoulder").innerHTML = "Hello World";
+  // Check if any of the radio buttons are checked
+  var leftChecked = document.getElementById("left").checked;
+  var rightChecked = document.getElementById("right").checked;
+  var shoulder;
+  if (leftChecked == true){
+    shoulder = 'left'
+  }
+  else {
+    shoulder = 'right'
+  }
+  console.log('shoulder is ', shoulder)
+  // Assign shoulder choice in backend
+  socket.emit("assign_shoulder", shoulder)
   pc = await createPeerConnection();
 
+  
+  
   // Access user's webcam
   await navigator.mediaDevices
     .getUserMedia({
@@ -85,7 +99,6 @@ async function start(){
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
         pc.addTrack(track, stream);
-        console.log("local video: ", track);
       });
     })
     .then(() => {

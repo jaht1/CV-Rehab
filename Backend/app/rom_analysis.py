@@ -6,10 +6,12 @@ import base64
 import numpy as np
 model = YOLO('yolov8n-pose.pt')  # load an official model
 
-def analyze_frame(frame):
+def analyze_frame(frame, shoulder):
     try:
         measuring = False
         left = False
+        if shoulder == left:
+            left = True
 
         def get_vertical_point(frame, shoulder_point):
             vertical_point = [shoulder_point[0], frame.shape[0]]
@@ -194,14 +196,10 @@ def analyze_frame(frame):
                 save_value(shoulder_string, 'C:\\yolo_pose\\Measurements.txt')'''
 
         return frame
-        '''processed_frame = process_frame(frame)
-        return shoulder_string, processed_frame'''
     except Exception as e:
         print('Something went wrong with the object detection: ', e)
         # Sends frame unprocessed if no angle could be detected to avoid interruptions on output stream
         return frame
-        '''processed_frame = process_frame(frame)
-        return "", processed_frame'''
 
 def process_frame(frame):
     '''Function to process frame for sending back to client. Returns frame as bytes. '''
