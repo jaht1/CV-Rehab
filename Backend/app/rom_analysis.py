@@ -10,7 +10,7 @@ def analyze_frame(frame, shoulder):
     try:
         measuring = False
         left = False
-        if shoulder == left:
+        if shoulder == 'left':
             left = True
 
         def get_vertical_point(frame, shoulder_point):

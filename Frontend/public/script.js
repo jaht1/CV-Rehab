@@ -43,7 +43,7 @@ function addEventListeners() {
   pc.addEventListener("track", function (event) {
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
-    connectionOutput("connected")
+    
     hideForm()
   });
 
@@ -62,6 +62,7 @@ function addEventListeners() {
   pc.addEventListener("connectionstatechange", (event) => {
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
+      connectionOutput("connected")
       
     }
   });
