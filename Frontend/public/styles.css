@@ -12,6 +12,7 @@ body {
 container styling before editing values */
 .content {
     padding: 30px !important;
+    height: 100%;
 }
 /*
 .container h1 {

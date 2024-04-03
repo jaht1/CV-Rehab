@@ -242,6 +242,7 @@ function connectionOutput(status) {
   }
 }
 
+
 /*
 window.addEventListener("beforeunload", async function (event) {
   // Empty PC on apge refresh
