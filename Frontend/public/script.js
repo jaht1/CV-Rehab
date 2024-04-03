@@ -30,7 +30,6 @@ async function createPeerConnection() {
 }
 
 function addEventListeners() {
-
   pc.addEventListener("track", function (event) {
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
@@ -61,6 +60,11 @@ function addEventListeners() {
     console.log("signalingState:", pc.signalingState);
  
   });
+}
+
+function start(){
+  //document.getElementById("shoulder").innerHTML = "Hello World";
+  document.write('works');
 }
 
 async function createOffer() {

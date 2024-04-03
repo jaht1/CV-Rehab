@@ -1,13 +1,39 @@
-
-
-
-.container {
-    justify-content: center;
-    width: 80%;
-    margin: 0 auto; /* Center content horizontally */
-    padding: 20px;
+body {
+    width: 100%;
+    background-color: black;
 }
 
+
+
+/* Remember to check bootstrap default 
+container styling before editing values */
+.content {
+    padding: 30px !important;
+}
+/*
+.container h1 {
+    padding-top: 20px;
+}*/
 .videoElement {
     display:none;
 }
+
+video {
+    display: block;
+    margin: 0 auto;
+    width: 640px;
+    height: 360px;
+    text-align: center;
+}
+
+#connectionStatus {
+    text-align: center;
+}
+
+
+/* Overriding bootstrap's default styling */
+@media (min-width: 500px) {
+    body .container {
+      max-width: 70%;
+    }
+  }

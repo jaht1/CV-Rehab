@@ -17,16 +17,20 @@
     <title>CV Rehab</title>
   </head>
   <body class="bg-light bg-gradient">
-    <div class="container">
-      <h1>CV Rehab</h1>
-      <h2>Detection</h2>
+    <div class="container bg-white">
+      <div class="content">
+        <h1>CV Rehab</h1>
+        <br>
+        <h2>Detection</h2>
+        <p>Choose which shoulder to calculate angle on</p>
+        <button onclick="start()" class="btn btn-primary">Start detection</button> 
+        <div id="connectionStatus">
+          <div id="spinner"></div>
+          <div id="statusText"></div>
+        </div>
 
-      <div id="connectionStatus">
-        <div id="spinner"></div>
-        <div id="statusText"></div>
+        <video id="remoteVideo" autoplay playsinline></video>
       </div>
-
-      <video id="remoteVideo" autoplay playsinline></video>
     </div>
   </body>
   <script src="./script.js" type="application/javascript"></script>
