@@ -21,8 +21,8 @@ container styling before editing values */
 video {
     display: block;
     margin: 0 auto;
-    width: 640px;
-    height: 360px;
+    /*width: 960px;
+    height: 540px;*/
     text-align: center;
 }
 

@@ -82,8 +82,8 @@ def on_track(track):
 
 @sio.on('assign_shoulder')
 def assign_shoulder(sid, shoulder_choice):
+    ''' Function that receives shoulder choice from the client. '''
     try:
-        print('inside shoulder function')
         global shoulder
         if shoulder_choice == 'left':
             shoulder = 'left'

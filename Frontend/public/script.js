@@ -2,7 +2,7 @@
 
 const socket = io("http://localhost:5000");
 let pc = null;
-
+let shoulder;
 // Error logs 
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -15,11 +15,21 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
+function hideForm() {
+  /**
+   * Hides form after video is displayed and replaces with status
+   */
+  var form = document.getElementById('formWrapper');
+  form.style.display = 'none';
+  var status = document.getElementById('status');
+  console.log('shoulder: '+ shoulder)
+  status.textContent = "Measuring "+ shoulder + " shoulder"
+}
+
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-
   };
   pc = new RTCPeerConnection({
     configuration,
@@ -33,8 +43,8 @@ function addEventListeners() {
   pc.addEventListener("track", function (event) {
     console.log(event.streams[0])
     document.getElementById('remoteVideo').srcObject = event.streams[0];
-    console.log('started stream at ', Date.now())
     connectionOutput("connected")
+    hideForm()
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -66,20 +76,17 @@ async function start(){
   // Check if any of the radio buttons are checked
   var leftChecked = document.getElementById("left").checked;
   var rightChecked = document.getElementById("right").checked;
-  var shoulder;
+  
   if (leftChecked == true){
     shoulder = 'left'
   }
   else {
     shoulder = 'right'
   }
-  console.log('shoulder is ', shoulder)
+  
   // Assign shoulder choice in backend
   socket.emit("assign_shoulder", shoulder)
   pc = await createPeerConnection();
-
-  
-  
   // Access user's webcam
   await navigator.mediaDevices
     .getUserMedia({

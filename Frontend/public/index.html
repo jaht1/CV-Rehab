@@ -22,26 +22,40 @@
         <h1>CV Rehab</h1>
         <br />
         <h2>Detection</h2>
-        <p>Choose which shoulder to calculate angle on</p>
-        <div class="form-check">
-          <input class="form-check-input" type="radio" id="left" name="shoulder" />
-          <label class="form-check-label" for="left">Left</label><br />
-        </div>
+        <p id="status">Choose which shoulder to calculate angle on</p>
+        <div id="formWrapper">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              id="left"
+              name="shoulder"
+            />
+            <label class="form-check-label" for="left">Left</label><br />
+          </div>
 
-        <div class="form-check">
-        <input class="form-check-input" type="radio" id="right" name="shoulder" />
-        
-          <label class="form-check-label" for="right">Right</label><br />
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              id="right"
+              name="shoulder"
+            />
+
+            <label class="form-check-label" for="right">Right</label><br />
+          </div>
           <button onclick="start()" class="btn btn-primary">
             Start detection
           </button>
         </div>
+
         <div id="connectionStatus">
           <div id="spinner"></div>
           <div id="statusText"></div>
         </div>
-
-        <video id="remoteVideo" autoplay playsinline></video>
+        <div class="ratio ratio-16x9">
+          <video id="remoteVideo" autoplay playsinline></video>
+        </div>
       </div>
     </div>
   </body>
