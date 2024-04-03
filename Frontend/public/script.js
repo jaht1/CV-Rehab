@@ -54,65 +54,15 @@ function addEventListeners() {
     console.log("signalingState:", pc.signalingState);
   });
 }
-function displayStream(event) {
-  /**
-   * Displays track stream
-   */
-  var remoteVideo = document.getElementById("remoteVideo");
-  remoteVideo.srcObject = event.streams[0];
-}
 
-async function replaceTrack(newTrack) {
-  /**
-   * Function that replaces previous tracks with current
-   */
-  const senders = pc.getSenders();
 
-  // Loop through the senders
-  // track associated with the track you want to replace
-  senders.forEach(async (sender) => {
-    // Check if the sender's track matches the one you want to replace
-    if (sender.track && sender.track.id === trackToReplace.id) {
-      try {
-        // Replace the track with the new one
-        await sender.replaceTrack(newTrack);
-        console.log("Track replaced successfully");
-      } catch (error) {
-        console.error("Error replacing track:", error);
-      }
-    }
-  });
-}
-
-function changeButton(id) {
-  /**
-   * Changes how the button looks like after clicking
-   */
-    ids = ['left', 'right']
-
-    label = document.getElementById(id).parentElement
-    // Toggle the "btn" class
-    label.classList.add("btn");
-    label.classList.add("btn-secondary");
-    label.classList.add("active");
-
-    for (const otherId of ids) {
-      // Check if the current ID is not the same as the one provided
-      if (otherId !== id) {
-        // Get the parent label element of the other button
-        const otherLabel = document.getElementById(otherId).parentElement;
-        // Remove the "active" class from the other button
-        otherLabel.classList.remove("active");
-      }
-    }
-}
 
 async function start(shoulder_choice) {
   /**
    * Function that initiates the peer connection
    * Communicates with the backend through sockets
    */
-  
+
   // Boolean to check if track is being added for the first time
   initializing = false;
 
@@ -200,6 +150,81 @@ async function createOffer() {
   }
 }
 
+function displayStream(event) {
+  /**
+   * Displays track stream
+   */
+  var remoteVideo = document.getElementById("remoteVideo");
+  remoteVideo.srcObject = event.streams[0];
+}
+
+async function replaceTrack(newTrack) {
+  /**
+   * Function that replaces previous tracks with current
+   */
+  const senders = pc.getSenders();
+
+  // Loop through the senders
+  // track associated with the track you want to replace
+  senders.forEach(async (sender) => {
+    // Check if the sender's track matches the one you want to replace
+    if (sender.track && sender.track.id === trackToReplace.id) {
+      try {
+        // Replace the track with the new one
+        await sender.replaceTrack(newTrack);
+        console.log("Track replaced successfully");
+      } catch (error) {
+        console.error("Error replacing track:", error);
+      }
+    }
+  });
+}
+
+/* SOCKET FUNCTIONS */
+
+socket.on("answer", function (data) {
+  /**
+   * Function that receives offer back from server
+   *
+   */
+  const answer = new RTCSessionDescription(data);
+  pc.setRemoteDescription(answer)
+    .then(() => {
+      console.log("Remote description set successfully!", answer);
+    })
+    .catch((error) => {
+      console.error("Error setting remote description:", error);
+    });
+});
+
+
+
+
+/* Functions for HTML/UI */
+
+function changeButton(id) {
+  /**
+   * Changes how the button looks like after clicking
+   */
+    ids = ['left', 'right']
+
+    label = document.getElementById(id).parentElement
+    // Toggle the "btn" class
+    label.classList.add("btn");
+    label.classList.add("btn-secondary");
+    label.classList.add("active");
+
+    for (const otherId of ids) {
+      // Check if the current ID is not the same as the one provided
+      if (otherId !== id) {
+        // Get the parent label element of the other button
+        const otherLabel = document.getElementById(otherId).parentElement;
+        // Remove the "active" class from the other button
+        otherLabel.classList.remove("active");
+      }
+    }
+}
+
 function connectionOutput(status) {
   /**
    * Function to display the current connection status for the client
@@ -217,26 +242,6 @@ function connectionOutput(status) {
   }
 }
 
-// Wait for website to be loaded
-document.addEventListener("DOMContentLoaded", async (event) => {
-  console.log("DOM loaded");
-  // Check for page refresh - empty peer connection
-});
-
-socket.on("answer", function (data) {
-  /**
-   * Function that receives offer back from server
-   *
-   */
-  const answer = new RTCSessionDescription(data);
-  pc.setRemoteDescription(answer)
-    .then(() => {
-      console.log("Remote description set successfully!", answer);
-    })
-    .catch((error) => {
-      console.error("Error setting remote description:", error);
-    });
-});
 /*
 window.addEventListener("beforeunload", async function (event) {
   // Empty PC on apge refresh
