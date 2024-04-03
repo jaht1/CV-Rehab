@@ -1,9 +1,7 @@
-
-
 const socket = io("http://localhost:5000");
 let pc = null;
 let shoulder;
-// Error logs 
+// Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
   console.log(err.description);
@@ -19,11 +17,11 @@ function hideForm() {
   /**
    * Hides form after video is displayed and replaces with status
    */
-  var form = document.getElementById('formWrapper');
-  form.style.display = 'none';
-  var status = document.getElementById('status');
-  console.log('shoulder: '+ shoulder)
-  status.textContent = "Measuring "+ shoulder + " shoulder"
+  var form = document.getElementById("formWrapper");
+  form.style.display = "none";
+  var status = document.getElementById("status");
+  console.log("shoulder: " + shoulder);
+  status.textContent = "Measuring " + shoulder + " shoulder";
 }
 
 async function createPeerConnection() {
@@ -38,13 +36,19 @@ async function createPeerConnection() {
   addEventListeners();
   return pc;
 }
+function displayStream(event) {
+  /**
+   * Displays track stream
+   */
+  var remoteVideo = document.getElementById("remoteVideo");
+  remoteVideo.srcObject = event.streams[0];
+  // Hide form from website
+  hideForm();
+}
 
 function addEventListeners() {
   pc.addEventListener("track", function (event) {
-    console.log(event.streams[0])
-    document.getElementById('remoteVideo').srcObject = event.streams[0];
-    
-    hideForm()
+    displayStream(event);
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -62,44 +66,42 @@ function addEventListeners() {
   pc.addEventListener("connectionstatechange", (event) => {
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
-      connectionOutput("connected")
-      
+      connectionOutput("connected");
     }
   });
   // Event listener for signalingstatechange event
   pc.addEventListener("signalingstatechange", function () {
     console.log("signalingState:", pc.signalingState);
- 
   });
 }
 
-async function start(){
+async function start() {
   // Check if any of the radio buttons are checked
   var leftChecked = document.getElementById("left").checked;
   var rightChecked = document.getElementById("right").checked;
-  
-  if (leftChecked == true){
-    shoulder = 'left'
+
+  if (leftChecked == true) {
+    shoulder = "left";
+  } else {
+    shoulder = "right";
   }
-  else {
-    shoulder = 'right'
-  }
-  
+
   // Assign shoulder choice in backend
-  socket.emit("assign_shoulder", shoulder)
+  socket.emit("assign_shoulder", shoulder);
   pc = await createPeerConnection();
   // Access user's webcam
   await navigator.mediaDevices
     .getUserMedia({
       audio: false,
-      video: {frameRate: { ideal: 10, max: 10 }, // frame rate constraints
-    },
+      video: {
+        frameRate: { ideal: 10, max: 10 }, // frame rate constraints
+      },
     })
     .then((stream) => {
       // Stream user's video
       console.log("Got user permission for camera");
-      connectionOutput("connecting")
-/*
+      connectionOutput("connecting");
+      /*
       const videoElement = document.getElementById("videoElement");
       videoElement.srcObject = stream;*/
       return stream;
@@ -112,7 +114,7 @@ async function start(){
     .then(() => {
       console.log("creating offer");
       return createOffer();
-    })
+    });
 }
 
 async function createOffer() {
@@ -120,7 +122,7 @@ async function createOffer() {
     console.log("in createOffer");
     // Create offer
     return pc
-      .createOffer({offerToReceiveAudio: false, offerToReceiveVideo: true})
+      .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
       .then(function (offer) {
         // set localdescription
         return pc.setLocalDescription(offer);
@@ -157,26 +159,24 @@ async function createOffer() {
 
 function connectionOutput(status) {
   const connectionStatus = document.getElementById("connectionStatus");
-  if (status == 'connecting'){
-    
+  if (status == "connecting") {
     connectionStatus.innerHTML = `<div class="spinner-container">
     <div class="spinner-border text-primary" role="status"></div>
     <div class="loading-text">Loading...</div>
   </div>
-  `
+  `;
   }
-  if (status == 'connected'){
-    
-    connectionStatus.innerHTML = ``
+  if (status == "connected") {
+    connectionStatus.innerHTML = ``;
   }
 }
 
 // Wait for website to be loaded
 document.addEventListener("DOMContentLoaded", async (event) => {
   console.log("DOM loaded");
+  // Check for page refresh - empty peer connection
   
 });
-
 
 socket.on("answer", function (data) {
   /**
@@ -194,3 +194,24 @@ socket.on("answer", function (data) {
     });
 });
 
+window.addEventListener('beforeunload', async function(event) {
+  // Empty PC on apge refresh
+  event.preventDefault(); // This line is optional
+  //socket.emit('pc_reset')
+  resetPeerConnection()
+  return event.returnValue = 'Are you sure you want to leave this page?';
+});
+
+
+async function resetPeerConnection(){
+  await pc.getSenders().forEach(sender => {
+    if (sender.track) {
+      sender.track.stop();
+    }
+  });
+  console.log('Peerconnection reset')
+  // Close the RTCPeerConnection instance
+  await pc.close();
+
+  // Create a new RTCPeerConnection instance
+}

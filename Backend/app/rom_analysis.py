@@ -146,9 +146,7 @@ def analyze_frame(frame, shoulder):
         
         
         for r in results:
-            #print("R:           ", r)
             keypoints = r.keypoints.xy.int().numpy()
-            #print('KEYPOINTS: \n\n', keypoints)
             left_shoulder = keypoints[0][5]
             right_shoulder = keypoints[0][6]
             left_elbow = keypoints[0][7]
@@ -184,7 +182,7 @@ def analyze_frame(frame, shoulder):
             shoulder_string = shoulder_string + str(int(angle))+' degrees'
             cv2.putText(frame, shoulder_string, (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)    
         
-        #cv2.imshow('YoloV8-based shoulder ROM analysis', frame)
+        
 
         key = cv2.waitKey(1)
         

@@ -41,11 +41,10 @@ class VideoTransformTrack(MediaStreamTrack):
             # Convert to numpy array for analysis
             np_frame = frame.to_ndarray(format="bgr24")
             
-            #resized_frame = cv2.resize(np_frame, (640, 480))
-            processed_frame = analyze_frame(np_frame, shoulder)
+            # Flip image to work as a mirror
+            mirrored_frame = cv2.flip(np_frame, 1)
+            processed_frame = analyze_frame(mirrored_frame, shoulder)
             # Convert processed numpy array back to VideoFrame
-            #processed_frame = cv2.flip(np_frame, 1)
-            # Create a new VideoFrame object from frame
             new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
             # Set time stamps to display frame in real-time
             new_frame.pts = frame.pts
@@ -69,7 +68,13 @@ app.add_middleware(
 
 
 pc = RTCPeerConnection()
-        
+'''@pc.on("connectionstatechange")
+def connection():
+    global pc
+    if pc.connectionState == 'closed':
+        pc = RTCPeerConnection()
+        print('Connection closed')'''
+       
 
 @pc.on("track")    
 def on_track(track):
@@ -119,7 +124,11 @@ async def offer(sid, data):
 
 
 
-    
+@sio.on('pc_reset')
+async def reset(sid):
+    global pc
+    pc = RTCPeerConnection()
+    print('Connection closed')
         
 @sio.on("connect")
 async def connect(sid, env):
@@ -128,8 +137,10 @@ async def connect(sid, env):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("Client Disconnected: ", str(sid))
-    
+    global pc
+    print('Connection closed')
     await pc.close()
+    pc = RTCPeerConnection()
     print('closed pc : ', pc)
 
 
