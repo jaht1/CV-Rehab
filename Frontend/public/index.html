@@ -25,25 +25,19 @@
         <p id="status">Choose which shoulder to calculate angle on</p>
 
         <div id="switchShoulders">
-          <div class="alert alert-info" role="alert">
-            Switch shoulder to measure from the buttons below
+          <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-secondary">
+              <input type="radio" class="btn-check" name="options" id="left" autocomplete="off" onclick="start(this.id); changeButton(this.id)">
+              Left
+            </label>
+            <label class="btn btn-secondary">
+              <input type="radio" class="btn-check" name="options" id="right" autocomplete="off"  onclick="start(this.id); changeButton(this.id)">
+              Right
+            </label>
           </div>
-          <button
-            onclick="start(this.id)"
-            class="btn btn-outline-primary"
-            id="left"
-          >
-            Left
-          </button>
-          <button
-            onclick="start(this.id)"
-            class="btn btn-outline-primary"
-            id="right"
-          >
-            Right
-          </button>
         </div>
-
+        
+        
         <div id="connectionStatus">
           <div id="spinner"></div>
           <div id="statusText"></div>

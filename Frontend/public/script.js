@@ -13,7 +13,6 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
@@ -63,23 +62,10 @@ function displayStream(event) {
   remoteVideo.srcObject = event.streams[0];
 }
 
-async function switchShoulder(shoulder) {
-  /**
-   * Function to switch shoulder
-   */
-  console.log("switching shoulder..");
-  // Stop existing tracks
-  // Get existing senders and remove them from the connection
-  const senders = await pc.getSenders();
-  // Remove each track from the peer connection
-  await Promise.all(senders.map((sender) => pc.removeTrack(sender)));
-  console.log("removed track");
-}
-
 async function replaceTrack(newTrack) {
- /**
-  * Function that replaces previous tracks with current
-  */
+  /**
+   * Function that replaces previous tracks with current
+   */
   const senders = pc.getSenders();
 
   // Loop through the senders
@@ -90,12 +76,35 @@ async function replaceTrack(newTrack) {
       try {
         // Replace the track with the new one
         await sender.replaceTrack(newTrack);
-        console.log('Track replaced successfully');
+        console.log("Track replaced successfully");
       } catch (error) {
-        console.error('Error replacing track:', error);
+        console.error("Error replacing track:", error);
       }
     }
   });
+}
+
+function changeButton(id) {
+  /**
+   * Changes how the button looks like after clicking
+   */
+    ids = ['left', 'right']
+
+    label = document.getElementById(id).parentElement
+    // Toggle the "btn" class
+    label.classList.add("btn");
+    label.classList.add("btn-secondary");
+    label.classList.add("active");
+
+    for (const otherId of ids) {
+      // Check if the current ID is not the same as the one provided
+      if (otherId !== id) {
+        // Get the parent label element of the other button
+        const otherLabel = document.getElementById(otherId).parentElement;
+        // Remove the "active" class from the other button
+        otherLabel.classList.remove("active");
+      }
+    }
 }
 
 async function start(shoulder_choice) {
@@ -103,7 +112,7 @@ async function start(shoulder_choice) {
    * Function that initiates the peer connection
    * Communicates with the backend through sockets
    */
-
+  
   // Boolean to check if track is being added for the first time
   initializing = false;
 
@@ -125,7 +134,6 @@ async function start(shoulder_choice) {
       },
     })
     .then((stream) => {
-      // Stream user's video
       console.log("Got user permission for camera");
       return stream;
     })
@@ -135,7 +143,7 @@ async function start(shoulder_choice) {
         if (initializing == true) {
           pc.addTrack(track, stream);
           console.log("adding track...");
-        } 
+        }
         // Redetection
         else {
           // If detection is already ongoing, replace tracks with new
