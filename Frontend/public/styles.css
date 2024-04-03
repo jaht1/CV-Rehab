@@ -3,7 +3,11 @@ body {
     background-color: black;
 }
 
-
+#switchShoulders {
+    text-align: center;
+    /*display: none;*/
+    visibility: hidden;
+}
 
 /* Remember to check bootstrap default 
 container styling before editing values */

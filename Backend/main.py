@@ -68,12 +68,10 @@ app.add_middleware(
 
 
 pc = RTCPeerConnection()
-'''@pc.on("connectionstatechange")
+
+@pc.on("connectionstatechange")
 def connection():
-    global pc
-    if pc.connectionState == 'closed':
-        pc = RTCPeerConnection()
-        print('Connection closed')'''
+    print('Connection state: ', pc.connectionState)
        
 
 @pc.on("track")    
@@ -140,7 +138,7 @@ async def disconnect(sid):
     global pc
     print('Connection closed')
     await pc.close()
-    pc = RTCPeerConnection()
+    
     print('closed pc : ', pc)
 
 

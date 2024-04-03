@@ -20,9 +20,10 @@
     <div class="container bg-white">
       <div class="content">
         <h1>CV Rehab</h1>
-        <br />
+        
         <h2>Detection</h2>
         <p id="status">Choose which shoulder to calculate angle on</p>
+
         <div id="formWrapper">
           <div class="form-check">
             <input
@@ -55,6 +56,25 @@
         </div>
         <div class="ratio ratio-16x9">
           <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+        <div id="switchShoulders">
+          <div class="alert alert-info" role="alert">
+            Switch shoulder to measure from the buttons below
+          </div>
+          <button
+            onclick="switchShoulder(this.id)"
+            class="btn btn-outline-primary"
+            id="left"
+          >
+            Left
+          </button>
+          <button
+            onclick="switchShoulder(this.id)"
+            class="btn btn-outline-primary"
+            id="right"
+          >
+            Right
+          </button>
         </div>
       </div>
     </div>

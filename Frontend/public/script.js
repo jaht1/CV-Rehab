@@ -36,15 +36,6 @@ async function createPeerConnection() {
   addEventListeners();
   return pc;
 }
-function displayStream(event) {
-  /**
-   * Displays track stream
-   */
-  var remoteVideo = document.getElementById("remoteVideo");
-  remoteVideo.srcObject = event.streams[0];
-  // Hide form from website
-  hideForm();
-}
 
 function addEventListeners() {
   pc.addEventListener("track", function (event) {
@@ -74,6 +65,16 @@ function addEventListeners() {
     console.log("signalingState:", pc.signalingState);
   });
 }
+function displayStream(event) {
+  /**
+   * Displays track stream
+   */
+  var remoteVideo = document.getElementById("remoteVideo");
+  remoteVideo.srcObject = event.streams[0];
+  // Hide form from website
+  hideForm();
+}
+
 
 async function start() {
   // Check if any of the radio buttons are checked
@@ -109,6 +110,7 @@ async function start() {
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
         pc.addTrack(track, stream);
+        console.log('adding track...')
       });
     })
     .then(() => {
@@ -168,6 +170,7 @@ function connectionOutput(status) {
   }
   if (status == "connected") {
     connectionStatus.innerHTML = ``;
+    document.getElementById("switchShoulders").style.visibility = "visible";
   }
 }
 
