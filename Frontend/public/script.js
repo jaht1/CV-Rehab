@@ -306,6 +306,6 @@ async function startCountdown() {
 }
 
 socket.on("log", function (output) {
-  console.log("Received log socket");
+  console.log("output");
   speaking(output);
 });

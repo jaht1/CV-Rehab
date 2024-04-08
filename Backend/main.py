@@ -123,8 +123,8 @@ async def logs(sid):
         with open('./Measurements.txt', 'rb') as file:
             lines = file.read().splitlines()
             if lines:
-                print(lines[-1])
-                await sio.emit('log', lines[-1])
+                last_line = lines[-1].decode('utf-8')
+                await sio.emit('log', last_line)
             else:
                 await sio.emit('log', 'Failed to find data')
                 # Return None if the file is empty
