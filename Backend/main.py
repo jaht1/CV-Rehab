@@ -118,13 +118,15 @@ async def offer(sid, data):
         print('Problem with offer: ', e)
 
 @sio.on('get_logs')
-def logs(sid):
+async def logs(sid):
     try:
-        with open('/Measurements.txt', 'rb') as file:
+        with open('./Measurements.txt', 'rb') as file:
             lines = file.read().splitlines()
             if lines:
-                sio.emit('log', lines[-1])
+                print(lines[-1])
+                await sio.emit('log', lines[-1])
             else:
+                await sio.emit('log', 'Failed to find data')
                 # Return None if the file is empty
                 return None  
     except Exception as e:

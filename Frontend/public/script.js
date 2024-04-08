@@ -5,7 +5,6 @@ let pc = null;
 let shoulder = null;
 streamLoaded = false;
 
-
 // Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -35,7 +34,6 @@ function addEventListeners() {
   pc.addEventListener("track", function (event) {
     // Display stream when track event is received
     displayStream(event);
-    
   });
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -157,7 +155,7 @@ function displayStream(event) {
    */
   var remoteVideo = document.getElementById("remoteVideo");
   remoteVideo.srcObject = event.streams[0];
-  startCountdown()
+  startCountdown();
 }
 
 async function replaceTrack(newTrack) {
@@ -246,7 +244,7 @@ function connectionOutput(status) {
 /* TTS variables */
 let utterance = null;
 let synthesis = null;
-
+let speechInProgress = false;
 function textToSpeech() {
   try {
     synthesis = window.speechSynthesis;
@@ -254,7 +252,7 @@ function textToSpeech() {
     // Get the first `en` language voice in the list
     var voice = synthesis.getVoices().filter(function (voice) {
       return voice.lang === "en";
-    })[0]
+    })[0];
 
     utterance = new SpeechSynthesisUtterance();
 
@@ -264,9 +262,17 @@ function textToSpeech() {
     utterance.rate = 1;
     utterance.volume = 0.8;
 
-
     /*utterance.text = 'Testing text to speech'
     synthesis.speak(utterance);*/
+    synthesis.onstart = function () {
+      speechInProgress = true;
+      console.log('SpeechInProgress')
+    };
+
+    synthesis.onend = function () {
+      speechInProgress = false;
+      console.log('SpeechNOTInProgress')
+    };
   } catch {
     console.log("Text-to-speech not supported.");
   }
@@ -274,25 +280,32 @@ function textToSpeech() {
 
 textToSpeech();
 
-function speechOutput(text) {
-    utterance.text = text
-    synthesis.speak(utterance)
+async function speaking(text) {
+  utterance.text = text;
+  await synthesis.speak(utterance);
+  
 }
 
 // countdown value
-let seconds = 5
-function startCountdown() {
-  speechOutput('Starting measurement in ' + seconds + 'seconds')
 
-  const countdown = setInterval(function() {
-    seconds = seconds - 1;
-    console.log(seconds)
-    speechOutput(seconds)
-  }, 1000)
+async function startCountdown() {
+  let seconds = 5;
+  speaking("Starting measurement in the count of " + seconds);
+  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
 
-  socket.emit('get_logs')
+  for (let i = seconds; i > 0; i--) {
+    if (!speechInProgress) {
+      console.log(i);
+      await speaking(i);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
+    }
+    
+  }
+  await socket.emit("get_logs");
+  console.log("Outside countown");
 }
 
-socket.on('log', function(output) {
-  
-})
+socket.on("log", function (output) {
+  console.log("Received log socket");
+  speaking(output);
+});
