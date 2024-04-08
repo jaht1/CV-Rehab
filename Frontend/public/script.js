@@ -92,6 +92,7 @@ async function start(shoulder_choice) {
         if (initializing == true) {
           pc.addTrack(track, stream);
           console.log("adding track...");
+          speaking('Preparing measurement of the ' + shoulder + ' shoulder')
         }
         // Redetection
         else {
