@@ -275,24 +275,26 @@ async function speaking(text) {
   await synthesis.speak(utterance);
 }
 
-// countdown value
+
 
 async function startCountdown() {
+  // countdown value
   let count = 5;
   speaking("Starting measurement in the count of " + count);
-  await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 1 second
+  await new Promise((resolve) => setTimeout(resolve, 2000)); 
 
   for (let i = count; i > 0; i--) {
     console.log(i);
     await speaking(i);
-    if (i != 1) {
-      // Wait inbetween counts - necessary for the voice to speak all counts
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (i == 1) {
+      
+      await speaking('Measuring NOW')
     }
+    // Wait inbetween counts - necessary for the voice to speak all counts
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   await socket.emit("get_logs");
-  console.log("Outside countown");
 }
 
 socket.on("log", function (output) {
