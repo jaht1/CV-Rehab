@@ -3,7 +3,6 @@ const socket = io("http://localhost:5000");
 /* peerconnection variables */
 let pc = null;
 let shoulder = null;
-streamLoaded = false;
 
 // Error logs
 socket.on("connect_error", (err) => {
@@ -52,6 +51,7 @@ function addEventListeners() {
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
       connectionOutput("connected");
+      enableButtons();
     }
   });
   // Event listener for signalingstatechange event
@@ -92,7 +92,7 @@ async function start(shoulder_choice) {
         if (initializing == true) {
           pc.addTrack(track, stream);
           console.log("adding track...");
-          speaking('Preparing measurement of the ' + shoulder + ' shoulder')
+          speaking("Preparing measurement of the " + shoulder + " shoulder");
         }
         // Redetection
         else {
@@ -107,6 +107,8 @@ async function start(shoulder_choice) {
       if (initializing == true) {
         connectionOutput("connecting");
         console.log("creating offer");
+        // Disable buttons until peers are connected
+        disableButtons();
         return createOffer();
       }
     });
@@ -114,7 +116,7 @@ async function start(shoulder_choice) {
 
 function createOffer() {
   try {
-    console.log("in createOffer");
+    console.log("Creating offer");
     // Create offer
     return pc
       .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
@@ -199,7 +201,6 @@ socket.on("answer", function (data) {
     });
 });
 
-
 socket.on("log", function (output) {
   /**
    * Receives last measurements log data
@@ -207,8 +208,6 @@ socket.on("log", function (output) {
   console.log("output");
   speaking(output);
 });
-
-
 
 /* TEXT-TO-SPEECH */
 
@@ -249,14 +248,13 @@ async function startCountdown() {
   // countdown value
   let count = 5;
   speaking("Starting measurement in the count of " + count);
-  await new Promise((resolve) => setTimeout(resolve, 2000)); 
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   for (let i = count; i > 0; i--) {
     console.log(i);
     await speaking(i);
     if (i == 1) {
-      
-      await speaking('Measuring NOW')
+      await speaking("Measuring NOW");
     }
     // Wait inbetween counts - necessary for the voice to speak all counts
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -266,16 +264,45 @@ async function startCountdown() {
 
 /* Functions for HTML/UI */
 
+function disableButtons() {
+  /**
+   * Disable buttons for the duration of the initializing process
+   * of the peerconnection
+   */
+  console.log("Disabling buttons");
+  const buttons = document.querySelectorAll("#switchShoulders label");
+  console.log("buttons!!");
+
+  buttons.forEach((label) => {
+    label.classList.add("btn");
+    label.classList.add("btn-primary");
+    label.classList.add("disabled");
+  });
+}
+
+function enableButtons() {
+  /**
+   * Enables buttons after initialization process
+   */
+  const buttons = document.querySelectorAll("#switchShoulders label");
+
+  buttons.forEach((label) => {
+   /* label.classList.add("btn");
+    label.classList.add("btn-primary");*/
+    label.classList.remove("disabled")
+  });
+}
 function changeButton(id) {
   /**
    * Changes how the button looks like after clicking
    */
+
   ids = ["left", "right"];
 
   label = document.getElementById(id).parentElement;
   // Toggle the "btn" class
   label.classList.add("btn");
-  label.classList.add("btn-secondary");
+  label.classList.add("btn-primary");
   label.classList.add("active");
 
   for (const otherId of ids) {
