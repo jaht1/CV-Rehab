@@ -1,6 +1,10 @@
 const socket = io("http://localhost:5000");
+
+/* peerconnection variables */
 let pc = null;
 let shoulder = null;
+streamLoaded = false;
+
 // Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -13,14 +17,14 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
+/*  WEBRTC  */
+
 function createPeerConnection() {
   // create a peer connection
   var configuration = {
     iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
   };
-  pc = new RTCPeerConnection(
-    configuration
-  );
+  pc = new RTCPeerConnection(configuration);
 
   addEventListeners();
   return pc;
@@ -28,6 +32,7 @@ function createPeerConnection() {
 
 function addEventListeners() {
   pc.addEventListener("track", function (event) {
+    // Display stream when track event is received
     displayStream(event);
   });
 
@@ -54,8 +59,6 @@ function addEventListeners() {
     console.log("signalingState:", pc.signalingState);
   });
 }
-
-
 
 async function start(shoulder_choice) {
   /**
@@ -89,11 +92,13 @@ async function start(shoulder_choice) {
         if (initializing == true) {
           pc.addTrack(track, stream);
           console.log("adding track...");
+          speaking('Preparing measurement of the ' + shoulder + ' shoulder')
         }
         // Redetection
         else {
           // If detection is already ongoing, replace tracks with new
           replaceTrack(track);
+          startCountdown();
         }
       });
     })
@@ -152,6 +157,7 @@ function displayStream(event) {
    */
   var remoteVideo = document.getElementById("remoteVideo");
   remoteVideo.srcObject = event.streams[0];
+  startCountdown();
 }
 
 async function replaceTrack(newTrack) {
@@ -194,7 +200,69 @@ socket.on("answer", function (data) {
 });
 
 
+socket.on("log", function (output) {
+  /**
+   * Receives last measurements log data
+   */
+  console.log("output");
+  speaking(output);
+});
 
+
+
+/* TEXT-TO-SPEECH */
+
+/* TTS variables */
+let utterance = null;
+let synthesis = null;
+let speechInProgress = false;
+function textToSpeech() {
+  try {
+    synthesis = window.speechSynthesis;
+
+    // Get the first `en` language voice in the list
+    var voice = synthesis.getVoices().filter(function (voice) {
+      return voice.lang === "en";
+    })[0];
+
+    utterance = new SpeechSynthesisUtterance();
+
+    // Set utterance properties
+    utterance.voice = voice;
+    utterance.pitch = 1;
+    utterance.rate = 1;
+    utterance.volume = 0.8;
+  } catch {
+    console.log("Text-to-speech not supported.");
+  }
+}
+
+// Initiate TTS function
+textToSpeech();
+
+async function speaking(text) {
+  utterance.text = text;
+  await synthesis.speak(utterance);
+}
+
+async function startCountdown() {
+  // countdown value
+  let count = 5;
+  speaking("Starting measurement in the count of " + count);
+  await new Promise((resolve) => setTimeout(resolve, 2000)); 
+
+  for (let i = count; i > 0; i--) {
+    console.log(i);
+    await speaking(i);
+    if (i == 1) {
+      
+      await speaking('Measuring NOW')
+    }
+    // Wait inbetween counts - necessary for the voice to speak all counts
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  await socket.emit("get_logs");
+}
 
 /* Functions for HTML/UI */
 
@@ -202,23 +270,23 @@ function changeButton(id) {
   /**
    * Changes how the button looks like after clicking
    */
-    ids = ['left', 'right']
+  ids = ["left", "right"];
 
-    label = document.getElementById(id).parentElement
-    // Toggle the "btn" class
-    label.classList.add("btn");
-    label.classList.add("btn-secondary");
-    label.classList.add("active");
+  label = document.getElementById(id).parentElement;
+  // Toggle the "btn" class
+  label.classList.add("btn");
+  label.classList.add("btn-secondary");
+  label.classList.add("active");
 
-    for (const otherId of ids) {
-      // Check if the current ID is not the same as the one provided
-      if (otherId !== id) {
-        // Get the parent label element of the other button
-        const otherLabel = document.getElementById(otherId).parentElement;
-        // Remove the "active" class from the other button
-        otherLabel.classList.remove("active");
-      }
+  for (const otherId of ids) {
+    // Check if the current ID is not the same as the one provided
+    if (otherId !== id) {
+      // Get the parent label element of the other button
+      const otherLabel = document.getElementById(otherId).parentElement;
+      // Remove the "active" class from the other button
+      otherLabel.classList.remove("active");
     }
+  }
 }
 
 function connectionOutput(status) {
@@ -237,5 +305,3 @@ function connectionOutput(status) {
     connectionStatus.innerHTML = ``;
   }
 }
-
-
