@@ -107,7 +107,7 @@ async function start(shoulder_choice) {
     });
 }
 
-async function createOffer() {
+function createOffer() {
   try {
     console.log("in createOffer");
     // Create offer
