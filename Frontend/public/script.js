@@ -199,6 +199,71 @@ socket.on("answer", function (data) {
     });
 });
 
+
+socket.on("log", function (output) {
+  /**
+   * Receives last measurements log data
+   */
+  console.log("output");
+  speaking(output);
+});
+
+
+
+/* TEXT-TO-SPEECH */
+
+/* TTS variables */
+let utterance = null;
+let synthesis = null;
+let speechInProgress = false;
+function textToSpeech() {
+  try {
+    synthesis = window.speechSynthesis;
+
+    // Get the first `en` language voice in the list
+    var voice = synthesis.getVoices().filter(function (voice) {
+      return voice.lang === "en";
+    })[0];
+
+    utterance = new SpeechSynthesisUtterance();
+
+    // Set utterance properties
+    utterance.voice = voice;
+    utterance.pitch = 1;
+    utterance.rate = 1;
+    utterance.volume = 0.8;
+  } catch {
+    console.log("Text-to-speech not supported.");
+  }
+}
+
+// Initiate TTS function
+textToSpeech();
+
+async function speaking(text) {
+  utterance.text = text;
+  await synthesis.speak(utterance);
+}
+
+async function startCountdown() {
+  // countdown value
+  let count = 5;
+  speaking("Starting measurement in the count of " + count);
+  await new Promise((resolve) => setTimeout(resolve, 2000)); 
+
+  for (let i = count; i > 0; i--) {
+    console.log(i);
+    await speaking(i);
+    if (i == 1) {
+      
+      await speaking('Measuring NOW')
+    }
+    // Wait inbetween counts - necessary for the voice to speak all counts
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  await socket.emit("get_logs");
+}
+
 /* Functions for HTML/UI */
 
 function changeButton(id) {
@@ -240,65 +305,3 @@ function connectionOutput(status) {
     connectionStatus.innerHTML = ``;
   }
 }
-
-/* TEXT-TO-SPEECH */
-
-/* TTS variables */
-let utterance = null;
-let synthesis = null;
-let speechInProgress = false;
-function textToSpeech() {
-  try {
-    synthesis = window.speechSynthesis;
-
-    // Get the first `en` language voice in the list
-    var voice = synthesis.getVoices().filter(function (voice) {
-      return voice.lang === "en";
-    })[0];
-
-    utterance = new SpeechSynthesisUtterance();
-
-    // Set utterance properties
-    utterance.voice = voice;
-    utterance.pitch = 1;
-    utterance.rate = 1;
-    utterance.volume = 0.8;
-  } catch {
-    console.log("Text-to-speech not supported.");
-  }
-}
-
-// Initiate TTS function
-textToSpeech();
-
-async function speaking(text) {
-  utterance.text = text;
-  await synthesis.speak(utterance);
-}
-
-
-
-async function startCountdown() {
-  // countdown value
-  let count = 5;
-  speaking("Starting measurement in the count of " + count);
-  await new Promise((resolve) => setTimeout(resolve, 2000)); 
-
-  for (let i = count; i > 0; i--) {
-    console.log(i);
-    await speaking(i);
-    if (i == 1) {
-      
-      await speaking('Measuring NOW')
-    }
-    // Wait inbetween counts - necessary for the voice to speak all counts
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  await socket.emit("get_logs");
-}
-
-socket.on("log", function (output) {
-  console.log("output");
-  speaking(output);
-});
