@@ -16,11 +16,11 @@ socket.on("connect", function () {
 async function createPeerConnection() {
   // create a peer connection
   var configuration = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
   };
-  pc = new RTCPeerConnection({
-    configuration,
-  });
+  pc = new RTCPeerConnection(
+    configuration
+  );
 
   addEventListeners();
   return pc;
@@ -243,25 +243,3 @@ function connectionOutput(status) {
 }
 
 
-/*
-window.addEventListener("beforeunload", async function (event) {
-  // Empty PC on apge refresh
-  event.preventDefault(); // This line is optional
-  //socket.emit('pc_reset')
-  resetPeerConnection();
-  return (event.returnValue = "Are you sure you want to leave this page?");
-});
-
-async function resetPeerConnection() {
-  await pc.getSenders().forEach((sender) => {
-    if (sender.track) {
-      sender.track.stop();
-    }
-  });
-  console.log("Peerconnection reset");
-  // Close the RTCPeerConnection instance
-  await pc.close();
-
-  // Create a new RTCPeerConnection instance
-}
-*/
