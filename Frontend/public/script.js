@@ -13,7 +13,7 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-async function createPeerConnection() {
+function createPeerConnection() {
   // create a peer connection
   var configuration = {
     iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
@@ -67,8 +67,8 @@ async function start(shoulder_choice) {
   initializing = false;
 
   // Check for first initialization
-  if (shoulder == null) {
-    pc = await createPeerConnection();
+  if (!shoulder) {
+    pc = createPeerConnection();
     initializing = true;
   }
   shoulder = shoulder_choice;
@@ -82,10 +82,6 @@ async function start(shoulder_choice) {
       video: {
         frameRate: { ideal: 10, max: 10 }, // frame rate constraints, these can eventually be increased
       },
-    })
-    .then((stream) => {
-      console.log("Got user permission for camera");
-      return stream;
     })
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
@@ -168,7 +164,7 @@ async function replaceTrack(newTrack) {
   // track associated with the track you want to replace
   senders.forEach(async (sender) => {
     // Check if the sender's track matches the one you want to replace
-    if (sender.track && sender.track.id === trackToReplace.id) {
+    if (sender.track && sender.track.id === newTrack.id) {
       try {
         // Replace the track with the new one
         await sender.replaceTrack(newTrack);

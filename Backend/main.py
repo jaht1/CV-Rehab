@@ -89,10 +89,7 @@ def assign_shoulder(sid, shoulder_choice):
     ''' Function that receives shoulder choice from the client. '''
     try:
         global shoulder
-        if shoulder_choice == 'left':
-            shoulder = 'left'
-        else:
-            shoulder = 'right'
+        shoulder = shoulder_choice
         print('Shoulder: ', shoulder)
         return
     except Exception as e:
