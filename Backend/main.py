@@ -117,7 +117,19 @@ async def offer(sid, data):
     except Exception as e:
         print('Problem with offer: ', e)
 
-
+@sio.on('get_logs')
+def logs(sid):
+    try:
+        with open('/Measurements.txt', 'rb') as file:
+            lines = file.read().splitlines()
+            if lines:
+                sio.emit('log', lines[-1])
+            else:
+                # Return None if the file is empty
+                return None  
+    except Exception as e:
+        print('Failed to read file: ', e)
+        
 
 
 @sio.on('pc_reset')

@@ -128,6 +128,13 @@ def analyze_frame(frame, shoulder):
 
             return angle
 
+        def save_value(value, path):
+            timestamp = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+            #save_data = timestamp + ': ' + value + '\n'
+            save_data = value + '\n'
+
+            with open(path, 'a') as file:
+                file.write(save_data)
 
         #while cap.isOpened():
         #ret, frame = cap.read()
@@ -186,12 +193,8 @@ def analyze_frame(frame, shoulder):
 
         key = cv2.waitKey(1)
         
-        '''if key == 27:
-            break'''
-
-        '''if key == 13:
-            if measuring:
-                save_value(shoulder_string, 'C:\\yolo_pose\\Measurements.txt')'''
+        
+        save_value(shoulder_string, './Measurements.txt')
 
         return frame
     except Exception as e:
