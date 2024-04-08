@@ -97,6 +97,7 @@ async function start(shoulder_choice) {
         else {
           // If detection is already ongoing, replace tracks with new
           replaceTrack(track);
+          startCountdown();
         }
       });
     })
@@ -258,49 +259,38 @@ function textToSpeech() {
 
     // Set utterance properties
     utterance.voice = voice;
-    utterance.pitch = 1.5;
+    utterance.pitch = 1;
     utterance.rate = 1;
     utterance.volume = 0.8;
-
-    /*utterance.text = 'Testing text to speech'
-    synthesis.speak(utterance);*/
-    synthesis.onstart = function () {
-      speechInProgress = true;
-      console.log('SpeechInProgress')
-    };
-
-    synthesis.onend = function () {
-      speechInProgress = false;
-      console.log('SpeechNOTInProgress')
-    };
   } catch {
     console.log("Text-to-speech not supported.");
   }
 }
 
+// Initiate TTS function
 textToSpeech();
 
 async function speaking(text) {
   utterance.text = text;
   await synthesis.speak(utterance);
-  
 }
 
 // countdown value
 
 async function startCountdown() {
-  let seconds = 5;
-  speaking("Starting measurement in the count of " + seconds);
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
+  let count = 5;
+  speaking("Starting measurement in the count of " + count);
+  await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 1 second
 
-  for (let i = seconds; i > 0; i--) {
-    if (!speechInProgress) {
-      console.log(i);
-      await speaking(i);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
+  for (let i = count; i > 0; i--) {
+    console.log(i);
+    await speaking(i);
+    if (i != 1) {
+      // Wait inbetween counts - necessary for the voice to speak all counts
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-    
   }
+
   await socket.emit("get_logs");
   console.log("Outside countown");
 }
