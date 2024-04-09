@@ -16,6 +16,22 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
+function savePeerConnection() {
+  localStorage.setItem("savedPeerConnection", JSON.stringify(pc));
+  return ;
+}
+
+// Function to retrieve RTCPeerConnection from localStorage
+function getSavedPeerConnection() {
+  const savedPeerConnection = localStorage.getItem("savedPeerConnection");
+  if (savedPeerConnection) {
+    return JSON.parse(savedPeerConnection);
+  }
+  return null;
+}
+
+window.addEventListener("beforeunload", savePeerConnection);
+
 /*  WEBRTC  */
 
 function createPeerConnection() {
@@ -46,8 +62,12 @@ function addEventListeners() {
   // Event listener for iceconnectionstatechange event
   pc.addEventListener("iceconnectionstatechange", function () {
     console.log("iceConnectionState:", pc.iceConnectionState);
+    if (pc.iceConnectionState === "failed") {
+      pc.restartIce();
+    }
   });
   pc.addEventListener("connectionstatechange", (event) => {
+    console.log("Connectionstatechange:", pc.connectionState);
     if (pc.connectionState === "connected") {
       console.log("peers connected!");
       connectionOutput("connected");
@@ -67,6 +87,17 @@ async function start(shoulder_choice) {
    */
 
   // Boolean to check if track is being added for the first time
+  const savedPC = getSavedPeerConnection();
+  if (savedPC) {
+    // Use the saved RTCPeerConnection
+    console.log('Found a peerconnection')
+    pc = savedPC;
+  }
+
+  if (!savedPC) {
+    console.log('Didnt find a peerconnection')
+    pc = createPeerConnection();
+  }
   initializing = false;
 
   // Check for first initialization
@@ -118,6 +149,7 @@ function createOffer() {
   try {
     console.log("Creating offer");
     // Create offer
+    // iceRestart: true
     return pc
       .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
       .then(function (offer) {
@@ -254,7 +286,7 @@ async function startCountdown() {
     console.log(i);
     await speaking(i);
     if (i == 1) {
-      await speaking("Measuring NOW");
+      await speaking("Measuring now");
     }
     // Wait inbetween counts - necessary for the voice to speak all counts
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -266,8 +298,9 @@ async function startCountdown() {
 
 function disableButtons() {
   /**
-   * Disable buttons for the duration of the initializing process
-   * of the peerconnection
+   * Disable buttons for the duration of the initializing
+   * process of the peerconnection
+   *
    */
   console.log("Disabling buttons");
   const buttons = document.querySelectorAll("#switchShoulders label");
@@ -287,16 +320,13 @@ function enableButtons() {
   const buttons = document.querySelectorAll("#switchShoulders label");
 
   buttons.forEach((label) => {
-   /* label.classList.add("btn");
-    label.classList.add("btn-primary");*/
-    label.classList.remove("disabled")
+    label.classList.remove("disabled");
   });
 }
 function changeButton(id) {
   /**
    * Changes how the button looks like after clicking
    */
-
   ids = ["left", "right"];
 
   label = document.getElementById(id).parentElement;

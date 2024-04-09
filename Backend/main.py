@@ -148,10 +148,10 @@ async def connect(sid, env):
 async def disconnect(sid):
     print("Client Disconnected: ", str(sid))
     global pc
-    print('Connection closed')
+    print('Closing connection...')
     await pc.close()
-    
-    print('closed pc : ', pc)
+    print('Connection closed')
+    pc = RTCPeerConnection()
 
 
 if __name__ == "__main__":
