@@ -67,45 +67,47 @@ app.add_middleware(
 )
 
 
-pc = RTCPeerConnection()
-
-@pc.on("connectionstatechange")
-def connection():
-    print('Connection state: ', pc.connectionState)
-       
-
-@pc.on("track")    
-def on_track(track):
-    try:
-        video_track = VideoTransformTrack(relay.subscribe(track))
-        print(video_track)
-        pc.addTrack(video_track)
-    except Exception as e:
-        print('Peerconnection track failed: ', e)
 
 
-@sio.on('assign_shoulder')
-def assign_shoulder(sid, shoulder_choice):
-    ''' Function that receives shoulder choice from the client. '''
-    try:
-        global shoulder
-        shoulder = shoulder_choice
-        print('Shoulder: ', shoulder)
-        return
-    except Exception as e:
-        print('Error assigning shoulder: ', e)
 
 @sio.on('offer')
 async def offer(sid, data):
     try:
+        
+        
         ''' Function to establish a connection between client and server using WebRTC 
         Receives an offer from the client '''
-        
+        pc = RTCPeerConnection()
         print('Session id in offer: ', sid)
         # Parsing offer data
         sdp = data['sdp']
         
         offer = RTCSessionDescription(sdp=sdp, type=data["type"])
+        @pc.on("connectionstatechange")
+        def connection():
+            print('Connection state: ', pc.connectionState)
+            
+
+        @pc.on("track")    
+        def on_track(track):
+            try:
+                video_track = VideoTransformTrack(relay.subscribe(track))
+                print(video_track)
+                pc.addTrack(video_track)
+            except Exception as e:
+                print('Peerconnection track failed: ', e)
+
+
+        @sio.on('assign_shoulder')
+        def assign_shoulder(sid, shoulder_choice):
+            ''' Function that receives shoulder choice from the client. '''
+            try:
+                global shoulder
+                shoulder = shoulder_choice
+                print('Shoulder: ', shoulder)
+                return
+            except Exception as e:
+                print('Error assigning shoulder: ', e)
         await pc.setRemoteDescription(offer)
         # Create an answer
         answer = await pc.createAnswer()
@@ -149,9 +151,11 @@ async def disconnect(sid):
     print("Client Disconnected: ", str(sid))
     global pc
     print('Closing connection...')
-    await pc.close()
+    #await pc.close()
     print('Connection closed')
-    pc = RTCPeerConnection()
+    #pc = RTCPeerConnection()
+    
+    
 
 
 if __name__ == "__main__":

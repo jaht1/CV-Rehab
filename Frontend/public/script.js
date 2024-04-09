@@ -3,7 +3,7 @@ const socket = io("http://localhost:5000");
 /* peerconnection variables */
 let pc = null;
 let shoulder = null;
-
+let detectionStream;
 // Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -16,25 +16,9 @@ socket.on("connect", function () {
   console.log("Connected...!", socket.connected);
 });
 
-function savePeerConnection() {
-  localStorage.setItem("savedPeerConnection", JSON.stringify(pc));
-  return ;
-}
-
-// Function to retrieve RTCPeerConnection from localStorage
-function getSavedPeerConnection() {
-  const savedPeerConnection = localStorage.getItem("savedPeerConnection");
-  if (savedPeerConnection) {
-    return JSON.parse(savedPeerConnection);
-  }
-  return null;
-}
-
-window.addEventListener("beforeunload", savePeerConnection);
-
 /*  WEBRTC  */
 
-function createPeerConnection() {
+async function createPeerConnection() {
   // create a peer connection
   var configuration = {
     iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
@@ -50,6 +34,7 @@ function addEventListeners() {
     // Display stream when track event is received
     displayStream(event);
   });
+
 
   pc.addEventListener("icegatheringstatechange", function () {
     console.log("iceGatheringState:", pc.iceGatheringState);
@@ -87,22 +72,13 @@ async function start(shoulder_choice) {
    */
 
   // Boolean to check if track is being added for the first time
-  const savedPC = getSavedPeerConnection();
-  if (savedPC) {
-    // Use the saved RTCPeerConnection
-    console.log('Found a peerconnection')
-    pc = savedPC;
-  }
-
-  if (!savedPC) {
-    console.log('Didnt find a peerconnection')
-    pc = createPeerConnection();
-  }
+  // This defines if track gets directly added to the pc
+  // or if a previous track gets replaced
   initializing = false;
 
   // Check for first initialization
   if (!shoulder) {
-    pc = createPeerConnection();
+    pc = await createPeerConnection();
     initializing = true;
   }
   shoulder = shoulder_choice;
@@ -116,6 +92,9 @@ async function start(shoulder_choice) {
       video: {
         frameRate: { ideal: 10, max: 10 }, // frame rate constraints, these can eventually be increased
       },
+    }).then((stream) => {
+      detectionStream = stream;
+      return stream
     })
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
@@ -194,27 +173,6 @@ function displayStream(event) {
   startCountdown();
 }
 
-async function replaceTrack(newTrack) {
-  /**
-   * Function that replaces previous tracks with current
-   */
-  const senders = pc.getSenders();
-
-  // Loop through the senders
-  // track associated with the track you want to replace
-  senders.forEach(async (sender) => {
-    // Check if the sender's track matches the one you want to replace
-    if (sender.track && sender.track.id === newTrack.id) {
-      try {
-        // Replace the track with the new one
-        await sender.replaceTrack(newTrack);
-        console.log("Track replaced successfully");
-      } catch (error) {
-        console.error("Error replacing track:", error);
-      }
-    }
-  });
-}
 
 /* SOCKET FUNCTIONS */
 
@@ -223,6 +181,7 @@ socket.on("answer", function (data) {
    * Function that receives offer back from server
    *
    */
+  console.log('Inside answer')
   const answer = new RTCSessionDescription(data);
   pc.setRemoteDescription(answer)
     .then(() => {
