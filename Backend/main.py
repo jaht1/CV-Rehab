@@ -136,11 +136,6 @@ async def logs(sid):
         
 
 
-@sio.on('pc_reset')
-async def reset(sid):
-    global pc
-    pc = RTCPeerConnection()
-    print('Connection closed')
         
 @sio.on("connect")
 async def connect(sid, env):
@@ -149,7 +144,6 @@ async def connect(sid, env):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("Client Disconnected: ", str(sid))
-    global pc
     print('Closing connection...')
     #await pc.close()
     print('Connection closed')
