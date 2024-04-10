@@ -124,9 +124,8 @@ async function start(shoulder_choice) {
     } catch (error) {
       // Handle errors during offer creation
       console.error("Error creating offer:", error);
-    } 
+    }
   }
-  
 }
 
 function createOffer() {
@@ -168,44 +167,6 @@ function createOffer() {
     console.error("Error creating offer and setting local description:", error);
   }
 }
-/*
-  try {
-    console.log("Creating offer");
-    // Create offer
-    // iceRestart: true
-    return pc
-      .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
-      .then(function (offer) {
-        return pc.setLocalDescription(offer);
-      })
-      .then(function () {
-        // wait for ICE gathering to complete - important!
-        return new Promise(function (resolve) {
-          if (pc.iceGatheringState === "complete") {
-            // if ICE gathering is already complete - resolve immediately
-            resolve();
-          } else {
-            // wait for ice gathering to complete if not already
-            function checkState() {
-              if (pc.iceGatheringState === "complete") {
-                console.log("icegathering complete");
-                // If ICE gathering becomes complete, remove the listener and resolve
-                pc.removeEventListener("icegatheringstatechange", checkState);
-                resolve();
-              }
-            }
-            // event listener for ICE gathering state change
-            pc.addEventListener("icegatheringstatechange", checkState);
-          }
-        });
-      })
-      .then(function () {
-        const { sdp, type } = pc.localDescription;
-        socket.emit("offer", { sdp, type });
-      });
-  } catch (error) {
-    console.error("Error creating offer and setting local description:", error);
-  }*/
 
 function displayStream(event) {
   /**
@@ -248,31 +209,16 @@ socket.on("log", function (output) {
 let utterance = null;
 let synthesis = null;
 let speechInProgress = false;
-function textToSpeech() {
-  try {
-    synthesis = window.speechSynthesis;
+synthesis = window.speechSynthesis;
 
-    // Get the first `en` language voice in the list
-    var voice = synthesis.getVoices().filter(function (voice) {
-      return voice.lang === "en";
-    })[0];
-
-    utterance = new SpeechSynthesisUtterance();
-
-    // Set utterance properties
-    utterance.voice = voice;
-    utterance.pitch = 1;
-    utterance.rate = 1;
-    utterance.volume = 0.8;
-  } catch {
-    console.log("Text-to-speech not supported.");
-  }
-}
-
-// Initiate TTS function
-textToSpeech();
 
 async function speaking(text) {
+  utterance = new SpeechSynthesisUtterance();
+
+  utterance.lang = "en-US"
+  utterance.pitch = 1;
+  utterance.rate = 1;
+  utterance.volume = 0.8;
   utterance.text = text;
   await synthesis.speak(utterance);
 }
@@ -285,14 +231,14 @@ async function startCountdown() {
 
   for (let i = count; i > 0; i--) {
     console.log(i);
-    await speaking(i);
+    speaking(i);
     if (i == 1) {
       await speaking("Measuring now");
     }
     // Wait inbetween counts - necessary for the voice to speak all counts
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
-  await socket.emit("get_logs");
+  socket.emit("get_logs");
 }
 
 /* Functions for HTML/UI */
