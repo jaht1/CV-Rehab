@@ -130,7 +130,8 @@ async def logs(sid):
             else:
                 await sio.emit('log', 'Failed to find data')
                 # Return None if the file is empty
-                return None  
+                return None
+        file.close()
     except Exception as e:
         print('Failed to read file: ', e)
         
@@ -144,10 +145,7 @@ async def connect(sid, env):
 @sio.on("disconnect")
 async def disconnect(sid):
     print("Client Disconnected: ", str(sid))
-    print('Closing connection...')
-    #await pc.close()
-    print('Connection closed')
-    #pc = RTCPeerConnection()
+    open('./Measurements.txt', 'w').close()
     
     
 

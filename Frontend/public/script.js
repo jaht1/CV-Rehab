@@ -176,6 +176,27 @@ function displayStream(event) {
   remoteVideo.srcObject = event.streams[0];
   startCountdown();
 }
+async function replaceTrack(newTrack) {
+  /**
+   * Function that replaces previous tracks with current
+   */
+  const senders = pc.getSenders();
+
+  // Loop through the senders
+  // track associated with the track you want to replace
+  senders.forEach(async (sender) => {
+    // Check if the sender's track matches the one you want to replace
+    if (sender.track && sender.track.id === newTrack.id) {
+      try {
+        // Replace the track with the new one
+        await sender.replaceTrack(newTrack);
+        console.log("Track replaced successfully");
+      } catch (error) {
+        console.error("Error replacing track:", error);
+      }
+    }
+  });
+}
 
 /* SOCKET FUNCTIONS */
 
@@ -225,7 +246,7 @@ async function speaking(text) {
 
 async function startCountdown() {
   // countdown value
-  let count = 5;
+  let count = 10;
   speaking("Starting measurement in the count of " + count);
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
