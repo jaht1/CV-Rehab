@@ -38,12 +38,6 @@ function addEventListeners() {
   pc.onicecandidate = (event) => {
     if (event.candidate) {
       console.log("New ICE Candidate:", event.candidate);
-
-      // Access specific candidate data
-      console.log("Candidate type:", event.candidate.type);
-      console.log("Candidate protocol:", event.candidate.protocol);
-      console.log("Candidate address:", event.candidate.address);
-      // ... and more as needed
     }
   };
 
@@ -87,6 +81,11 @@ async function start(shoulder_choice) {
   // or if a previous track gets replaced
   initializing = false;
 
+  const mediaStreamPromise = navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: { frameRate: { ideal: 10, max: 10 } },
+  });
+
   // Check for first initialization
   if (!shoulder) {
     pc = await createPeerConnection();
@@ -97,87 +96,77 @@ async function start(shoulder_choice) {
   socket.emit("assign_shoulder", shoulder);
 
   // Access user's webcam
-  await navigator.mediaDevices
-    .getUserMedia({
-      audio: false,
-      video: {
-        frameRate: { ideal: 10, max: 10 }, // frame rate constraints, these can eventually be increased
-      },
-    })
-    .then((stream) => {
-      detectionStream = stream;
-      return stream;
-    })
-    .then((stream) => {
-      stream.getTracks().forEach(function (track) {
-        // First time detection
-        if (initializing == true) {
-          pc.addTrack(track, stream);
-          console.log("adding track...");
-          speaking("Preparing measurement of the " + shoulder + " shoulder");
-        }
-        // Redetection
-        else {
-          // If detection is already ongoing, replace tracks with new
-          replaceTrack(track);
-          startCountdown();
-        }
-      });
-    })
-    .then(() => {
-      // Create offer only if start is clicked for the first time
-      if (initializing == true) {
-        connectionOutput("connecting");
-        console.log("creating offer");
-        // Disable buttons until peers are connected
-        disableButtons();
-        return createOffer();
-      }
-    });
+  const mediaStream = await mediaStreamPromise;
+  detectionStream = mediaStream;
+
+  mediaStream.getTracks().forEach(function (track) {
+    // First time detection
+    if (initializing == true) {
+      pc.addTrack(track, mediaStream);
+      console.log("adding track...");
+      speaking("Preparing measurement of the " + shoulder + " shoulder");
+    }
+    // Redetection
+    else {
+      // If detection is already ongoing, replace tracks with new
+      replaceTrack(track);
+      startCountdown();
+    }
+  });
+  // Create offer only if start is clicked for the first time
+  if (initializing == true) {
+    connectionOutput("connecting");
+    console.log("creating offer");
+    // Disable buttons until peers are connected
+    disableButtons();
+    try {
+      await createOffer();
+    } catch (error) {
+      // Handle errors during offer creation
+      console.error("Error creating offer:", error);
+    } 
+  }
+  
 }
 
 function createOffer() {
-  console.log("Creating offer");
-
-  // Start a timeout for ICE gathering to reduce latency
-  // Gathering will continue in the background
-  const iceGatheringTimeout = setTimeout(() => {
-    console.log("ICE gathering timeout reached. Sending offer.");
-    const { sdp, type } = pc.localDescription;
-    socket.emit("offer", { sdp, type });
-  }, 1000);
-
-  // Create offer
-  return pc
-    .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
-    .then((offer) => {
-      // Set offer as local description
-      pc.setLocalDescription(offer)
-    })
-    .then(() => {
-      // Check if icegathering is complete before timeout
-      if (pc.iceGatheringState === "complete") {
-        console.log("icegathering complete before timeout");
-        clearTimeout(iceGatheringTimeout);
+  try {
+    console.log("Creating offer");
+    // Create offer
+    // iceRestart: true
+    return pc
+      .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
+      .then(function (offer) {
+        return pc.setLocalDescription(offer);
+      })
+      .then(function () {
+        // wait for ICE gathering to complete - important!
+        return new Promise(function (resolve) {
+          if (pc.iceGatheringState === "complete") {
+            // if ICE gathering is already complete - resolve immediately
+            resolve();
+          } else {
+            // wait for ice gathering to complete if not already
+            function checkState() {
+              if (pc.iceGatheringState === "complete") {
+                console.log("icegathering complete");
+                // If ICE gathering becomes complete, remove the listener and resolve
+                pc.removeEventListener("icegatheringstatechange", checkState);
+                resolve();
+              }
+            }
+            // event listener for ICE gathering state change
+            pc.addEventListener("icegatheringstatechange", checkState);
+          }
+        });
+      })
+      .then(function () {
         const { sdp, type } = pc.localDescription;
         socket.emit("offer", { sdp, type });
-      } else {
-        return new Promise((resolve) => {
-          function checkState() {
-            if (pc.iceGatheringState === "complete") {
-              console.log("icegathering complete (event listener)");
-              clearTimeout(iceGatheringTimeout);
-              pc.removeEventListener("icegatheringstatechange", checkState);
-              const { sdp, type } = pc.localDescription;
-              socket.emit("offer", { sdp, type });
-              resolve();
-            }
-          }
-          pc.addEventListener("icegatheringstatechange", checkState);
-        
       });
-    }
-  });
+  } catch (error) {
+    console.error("Error creating offer and setting local description:", error);
+  }
 }
 /*
   try {
