@@ -1,4 +1,3 @@
-
 const socket = io("http://localhost:5000");
 
 /* peerconnection variables */
@@ -146,7 +145,7 @@ function createOffer() {
     console.log("ICE gathering timeout reached. Sending offer.");
     const { sdp, type } = pc.localDescription;
     socket.emit("offer", { sdp, type });
-  }, 500);
+  }, 1000);
 
   // Create offer
   return pc
@@ -156,22 +155,68 @@ function createOffer() {
       pc.setLocalDescription(offer)
     })
     .then(() => {
-      return new Promise((resolve) => {
+      // Check if icegathering is complete before timeout
+      if (pc.iceGatheringState === "complete") {
+        console.log("icegathering complete before timeout");
+        clearTimeout(iceGatheringTimeout);
+        const { sdp, type } = pc.localDescription;
+        socket.emit("offer", { sdp, type });
+      } else {
+        return new Promise((resolve) => {
           function checkState() {
-            // Check when all icecandidates have been gathered
             if (pc.iceGatheringState === "complete") {
-              console.log("icegathering complete");
-              // Remove timeout and event listener
+              console.log("icegathering complete (event listener)");
               clearTimeout(iceGatheringTimeout);
               pc.removeEventListener("icegatheringstatechange", checkState);
+              const { sdp, type } = pc.localDescription;
+              socket.emit("offer", { sdp, type });
               resolve();
             }
           }
           pc.addEventListener("icegatheringstatechange", checkState);
+        
       });
+    }
   });
 }
-
+/*
+  try {
+    console.log("Creating offer");
+    // Create offer
+    // iceRestart: true
+    return pc
+      .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
+      .then(function (offer) {
+        return pc.setLocalDescription(offer);
+      })
+      .then(function () {
+        // wait for ICE gathering to complete - important!
+        return new Promise(function (resolve) {
+          if (pc.iceGatheringState === "complete") {
+            // if ICE gathering is already complete - resolve immediately
+            resolve();
+          } else {
+            // wait for ice gathering to complete if not already
+            function checkState() {
+              if (pc.iceGatheringState === "complete") {
+                console.log("icegathering complete");
+                // If ICE gathering becomes complete, remove the listener and resolve
+                pc.removeEventListener("icegatheringstatechange", checkState);
+                resolve();
+              }
+            }
+            // event listener for ICE gathering state change
+            pc.addEventListener("icegatheringstatechange", checkState);
+          }
+        });
+      })
+      .then(function () {
+        const { sdp, type } = pc.localDescription;
+        socket.emit("offer", { sdp, type });
+      });
+  } catch (error) {
+    console.error("Error creating offer and setting local description:", error);
+  }*/
 
 function displayStream(event) {
   /**
@@ -245,7 +290,7 @@ async function speaking(text) {
 
 async function startCountdown() {
   // countdown value
-  let count = 10;
+  let count = 5;
   speaking("Starting measurement in the count of " + count);
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
