@@ -1,21 +1,18 @@
-import base64
 from fastapi import FastAPI, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from fastapi.responses import HTMLResponse 
-from fastapi.staticfiles import StaticFiles
-from starlette.templating import Jinja2Templates
 import socketio
 import logging
 from app.rom_analysis import analyze_frame
 import cv2
-import numpy as np
-import json
-#from aiohttp import web
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
-from aiortc.contrib.media import MediaRelay,MediaStreamError
+from aiortc.contrib.media import MediaRelay
 import av
+from dotenv import load_dotenv
 
+load_dotenv()
+import os
+server = os.getenv("SERVER")
 
 app = FastAPI()
 router = APIRouter()
@@ -98,16 +95,7 @@ async def offer(sid, data):
                 print('Peerconnection track failed: ', e)
 
 
-        @sio.on('assign_shoulder')
-        def assign_shoulder(sid, shoulder_choice):
-            ''' Function that receives shoulder choice from the client. '''
-            try:
-                global shoulder
-                shoulder = shoulder_choice
-                print('Shoulder: ', shoulder)
-                return
-            except Exception as e:
-                print('Error assigning shoulder: ', e)
+        
         await pc.setRemoteDescription(offer)
         # Create an answer
         answer = await pc.createAnswer()
@@ -119,6 +107,18 @@ async def offer(sid, data):
     except Exception as e:
         print('Problem with offer: ', e)
 
+@sio.on('assign_shoulder')
+def assign_shoulder(sid, shoulder_choice):
+    ''' Function that receives shoulder choice from the client. '''
+    try:
+        global shoulder
+        shoulder = shoulder_choice
+        print('Shoulder: ', shoulder)
+        return
+    except Exception as e:
+        print('Error assigning shoulder: ', e)
+        
+        
 @sio.on('get_logs')
 async def logs(sid):
     try:
@@ -153,4 +153,4 @@ async def disconnect(sid):
 
 
 if __name__ == "__main__":
-    uvicorn.run(socket_app, host="localhost", port=5000, log_level="debug")
+    uvicorn.run(socket_app, host=server, port=5000, log_level="debug")

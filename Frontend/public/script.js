@@ -1,3 +1,4 @@
+
 const socket = io("http://localhost:5000");
 
 /* peerconnection variables */
@@ -35,6 +36,17 @@ function addEventListeners() {
     displayStream(event);
   });
 
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      console.log("New ICE Candidate:", event.candidate);
+
+      // Access specific candidate data
+      console.log("Candidate type:", event.candidate.type);
+      console.log("Candidate protocol:", event.candidate.protocol);
+      console.log("Candidate address:", event.candidate.address);
+      // ... and more as needed
+    }
+  };
 
   pc.addEventListener("icegatheringstatechange", function () {
     console.log("iceGatheringState:", pc.iceGatheringState);
@@ -92,9 +104,10 @@ async function start(shoulder_choice) {
       video: {
         frameRate: { ideal: 10, max: 10 }, // frame rate constraints, these can eventually be increased
       },
-    }).then((stream) => {
+    })
+    .then((stream) => {
       detectionStream = stream;
-      return stream
+      return stream;
     })
     .then((stream) => {
       stream.getTracks().forEach(function (track) {
@@ -125,44 +138,40 @@ async function start(shoulder_choice) {
 }
 
 function createOffer() {
-  try {
-    console.log("Creating offer");
-    // Create offer
-    // iceRestart: true
-    return pc
-      .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
-      .then(function (offer) {
-        return pc.setLocalDescription(offer);
-      })
-      .then(function () {
-        // wait for ICE gathering to complete - important!
-        return new Promise(function (resolve) {
-          if (pc.iceGatheringState === "complete") {
-            // if ICE gathering is already complete - resolve immediately
-            resolve();
-          } else {
-            // wait for ice gathering to complete if not already
-            function checkState() {
-              if (pc.iceGatheringState === "complete") {
-                console.log("icegathering complete");
-                // If ICE gathering becomes complete, remove the listener and resolve
-                pc.removeEventListener("icegatheringstatechange", checkState);
-                resolve();
-              }
+  console.log("Creating offer");
+
+  // Start a timeout for ICE gathering to reduce latency
+  // Gathering will continue in the background
+  const iceGatheringTimeout = setTimeout(() => {
+    console.log("ICE gathering timeout reached. Sending offer.");
+    const { sdp, type } = pc.localDescription;
+    socket.emit("offer", { sdp, type });
+  }, 500);
+
+  // Create offer
+  return pc
+    .createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: true })
+    .then((offer) => {
+      // Set offer as local description
+      pc.setLocalDescription(offer)
+    })
+    .then(() => {
+      return new Promise((resolve) => {
+          function checkState() {
+            // Check when all icecandidates have been gathered
+            if (pc.iceGatheringState === "complete") {
+              console.log("icegathering complete");
+              // Remove timeout and event listener
+              clearTimeout(iceGatheringTimeout);
+              pc.removeEventListener("icegatheringstatechange", checkState);
+              resolve();
             }
-            // event listener for ICE gathering state change
-            pc.addEventListener("icegatheringstatechange", checkState);
           }
-        });
-      })
-      .then(function () {
-        const { sdp, type } = pc.localDescription;
-        socket.emit("offer", { sdp, type });
+          pc.addEventListener("icegatheringstatechange", checkState);
       });
-  } catch (error) {
-    console.error("Error creating offer and setting local description:", error);
-  }
+  });
 }
+
 
 function displayStream(event) {
   /**
@@ -173,7 +182,6 @@ function displayStream(event) {
   startCountdown();
 }
 
-
 /* SOCKET FUNCTIONS */
 
 socket.on("answer", function (data) {
@@ -181,7 +189,7 @@ socket.on("answer", function (data) {
    * Function that receives offer back from server
    *
    */
-  console.log('Inside answer')
+  console.log("Inside answer");
   const answer = new RTCSessionDescription(data);
   pc.setRemoteDescription(answer)
     .then(() => {
@@ -237,7 +245,7 @@ async function speaking(text) {
 
 async function startCountdown() {
   // countdown value
-  let count = 5;
+  let count = 10;
   speaking("Starting measurement in the count of " + count);
   await new Promise((resolve) => setTimeout(resolve, 2000));
 

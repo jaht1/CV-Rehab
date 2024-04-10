@@ -22,5 +22,5 @@ io.on("connection", (socket) => {
 
 // Starts application
 server.listen(port, () => {
-  console.log(`server running at http://localhost:${port}`);
+  console.log(`server running at http://192.168.50.145:${port}`);
 });
