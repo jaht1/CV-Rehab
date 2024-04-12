@@ -139,27 +139,6 @@ function createOffer() {
         return pc.setLocalDescription(offer);
       })
       .then(function () {
-        // wait for ICE gathering to complete - important!
-        return new Promise(function (resolve) {
-          if (pc.iceGatheringState === "complete") {
-            // if ICE gathering is already complete - resolve immediately
-            resolve();
-          } else {
-            // wait for ice gathering to complete if not already
-            function checkState() {
-              if (pc.iceGatheringState === "complete") {
-                console.log("icegathering complete");
-                // If ICE gathering becomes complete, remove the listener and resolve
-                pc.removeEventListener("icegatheringstatechange", checkState);
-                resolve();
-              }
-            }
-            // event listener for ICE gathering state change
-            pc.addEventListener("icegatheringstatechange", checkState);
-          }
-        });
-      })
-      .then(function () {
         const { sdp, type } = pc.localDescription;
         socket.emit("offer", { sdp, type });
       });

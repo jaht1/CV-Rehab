@@ -64,7 +64,9 @@ app.add_middleware(
 )
 
 
-
+''''@sio.on('iceCandidate')
+def handle_ice_candidate(candidate):'''
+    
 
 
 @sio.on('offer')
