@@ -5,10 +5,11 @@ import socketio
 import logging
 from app.rom_analysis import analyze_frame
 import cv2
-from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, RTCIceCandidate
 from aiortc.contrib.media import MediaRelay
 import av
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 import os
@@ -64,8 +65,13 @@ app.add_middleware(
 )
 
 
-''''@sio.on('iceCandidate')
-def handle_ice_candidate(candidate):'''
+class Candidate:
+    def __init__(self, candidate, sdpMid, sdpMLineIndex, usernameFragment, component):
+        self.candidate = candidate
+        self.sdpMid = sdpMid
+        self.sdpMLineIndex = sdpMLineIndex
+        self.usernameFragment = usernameFragment
+        self.component = component
     
 
 
@@ -96,9 +102,24 @@ async def offer(sid, data):
             except Exception as e:
                 print('Peerconnection track failed: ', e)
 
-
+        @sio.on('add_icecandidate')
+        async def handle_ice_candidate(sid, candidate):
+            try:
+                c = RTCIceCandidate(**candidate)
+                
+                
+                try:
+                    await pc.addIceCandidate(c)
+                    print('Added ICE Succesfully!')
+                    return
+                except Exception as e:
+                    print(e)
+            except Exception as e:
+                print('failed to add ice: ', e)
+    
         
         await pc.setRemoteDescription(offer)
+        print('Added remote description')
         # Create an answer
         answer = await pc.createAnswer()
         # Set the local description
