@@ -4,7 +4,7 @@ const socket = io("http://localhost:5000");
 let pc = null;
 let shoulder = null;
 let detectionStream;
-let remoteDescriptionSet = false
+let remoteDescriptionSet = false;
 let candidates = [];
 // Error logs
 socket.on("connect_error", (err) => {
@@ -24,7 +24,7 @@ async function createPeerConnection() {
   // create a peer connection
   var configuration = {
     iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
-    trickle: true
+    trickle: true,
   };
   pc = new RTCPeerConnection(configuration);
 
@@ -33,8 +33,6 @@ async function createPeerConnection() {
 }
 
 function addEventListeners() {
-  
-
   pc.addEventListener("track", function (event) {
     // Display stream when track event is received
     displayStream(event);
@@ -42,27 +40,17 @@ function addEventListeners() {
 
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      pc.addIceCandidate(event.candidate)
-      c = {
-        'component': event.candidate.component,
-        'foundation': event.candidate.foundation,
-        'ip': event.candidate.address,
-        'port': event.candidate.port,
-        'priority': event.candidate.priority,
-        'protocol': event.candidate.protocol,
-        'type': event.candidate.type,
-        'relatedAddress': event.candidate.relatedAddress,
-        'relatedPort': event.candidate.relatedPort,
-        'sdpMid': event.candidate.sdpMid,
-        'sdpMLineIndex': event.candidate.sdpMLineIndex,
-        'tcpType': event.candidate.tcpType,
+      // Remote description must be set before adding candidates
+      if (remoteDescriptionSet == false) {
+        candidates.push(event.candidate);
+      } else {
+        c = JSON.stringify(event.candidate);
+        pc.addIceCandidate(event.candidate);
+        socket.emit("add_icecandidate", c);
       }
-      candidates.push(c)
-      //c = JSON.stringify(event.candidate)
-      const candidateObj = new RTCIceCandidate(c);
-      socket.emit('add_icecandidate', c)
-      console.log("New ICE Candidate:", c);
+      //console.log("New ICE Candidate:", event.candidate);
     }
+    console.log(candidates)
   };
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -91,6 +79,19 @@ function addEventListeners() {
   // Event listener for signalingstatechange event
   pc.addEventListener("signalingstatechange", function () {
     console.log("signalingState:", pc.signalingState);
+  });
+}
+
+function addIceCandidates() {
+  /**
+   * Function that adds all stored ICE candidates
+   * after setting remote description
+   */
+  candidates.forEach((candidate) => {
+    console.log('Adding and sending stored candidate: '+ candidate)
+    pc.addIceCandidate(candidate);
+    c = JSON.stringify(candidate);
+    socket.emit("add_icecandidate", c);
   });
 }
 
@@ -213,7 +214,8 @@ socket.on("answer", function (data) {
   pc.setRemoteDescription(answer)
     .then(() => {
       console.log("Remote description set successfully!", answer);
-      setRemoteDescription = true
+      setRemoteDescription = true;
+      addIceCandidates();
     })
     .catch((error) => {
       console.error("Error setting remote description:", error);
@@ -236,11 +238,10 @@ let synthesis = null;
 let speechInProgress = false;
 synthesis = window.speechSynthesis;
 
-
 async function speaking(text) {
   utterance = new SpeechSynthesisUtterance();
 
-  utterance.lang = "en-US"
+  utterance.lang = "en-US";
   utterance.pitch = 1;
   utterance.rate = 1;
   utterance.volume = 0.8;

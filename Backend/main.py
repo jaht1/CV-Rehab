@@ -105,11 +105,47 @@ async def offer(sid, data):
         @sio.on('add_icecandidate')
         async def handle_ice_candidate(sid, candidate):
             try:
-                c = RTCIceCandidate(**candidate)
-                
-                
+                candidate = json.loads(candidate)
+                c= candidate
+                #c = RTCIceCandidate(**candidate)
+                candidateAttributes = candidate['candidate'].split(' ')
+                print(candidateAttributes)
+                # Extract the candidate attributes
+                foundation = candidateAttributes[0].replace('candidate:', ' ')
+                component = candidateAttributes[1]
+                protocol= candidateAttributes[2]
+                priority = candidateAttributes[3]
+                ip = candidateAttributes[4]
+                port = candidateAttributes[5]
+                candidateType = candidateAttributes[7]
+                tcpType = None
+                relatedAddress =None
+                relatedPort = None
+                if len(candidateAttributes) > 8:
+                    if candidateType == 'host':
+                        tcpType = candidateAttributes[9]
+                    elif candidateType == 'srflx' or candidateType == 'prflx' or candidateType == 'relay':
+                        relatedAddress = candidateAttributes[9]
+                        relatedPort = candidateAttributes[11]
+                    
+                ice_candidate = RTCIceCandidate(
+                    component=component,
+                    foundation=foundation,
+                    ip=ip,
+                    port=port,
+                    priority=priority,
+                    protocol=protocol,
+                    type=candidateType,
+                    relatedAddress=relatedAddress,
+                    relatedPort=relatedPort,
+                    sdpMid = candidate['sdpMid'],
+                    sdpMLineIndex=candidate['sdpMLineIndex'],
+                    tcpType=tcpType
+                    
+                )
+                print(c)
                 try:
-                    await pc.addIceCandidate(c)
+                    await pc.addIceCandidate(ice_candidate)
                     print('Added ICE Succesfully!')
                     return
                 except Exception as e:
