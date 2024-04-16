@@ -88,11 +88,14 @@ async def offer(sid, data):
         sdp = data['sdp']
         
         offer = RTCSessionDescription(sdp=sdp, type=data["type"])
+        
         @pc.on("connectionstatechange")
         def connection():
             print('Connection state: ', pc.connectionState)
             
-
+        @pc.on('icecandidate')
+        async def on_ice_candidate(candidate):
+            await print('received a candidate ')
         @pc.on("track")    
         def on_track(track):
             try:
@@ -109,7 +112,7 @@ async def offer(sid, data):
                 c= candidate
                 #c = RTCIceCandidate(**candidate)
                 candidateAttributes = candidate['candidate'].split(' ')
-                print(candidateAttributes)
+                #print(candidateAttributes)
                 # Extract the candidate attributes
                 foundation = candidateAttributes[0].replace('candidate:', ' ')
                 component = candidateAttributes[1]
@@ -143,7 +146,7 @@ async def offer(sid, data):
                     tcpType=tcpType
                     
                 )
-                print(c)
+                print(ice_candidate)
                 try:
                     await pc.addIceCandidate(ice_candidate)
                     print('Added ICE Succesfully!')
@@ -155,9 +158,11 @@ async def offer(sid, data):
     
         
         await pc.setRemoteDescription(offer)
-        print('Added remote description')
+        print('Added remote description, creating answer')
         # Create an answer
+        
         answer = await pc.createAnswer()
+        print('Answer created')
         # Set the local description
         await pc.setLocalDescription(answer)
         # Send the answer back to the client

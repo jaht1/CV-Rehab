@@ -39,18 +39,20 @@ function addEventListeners() {
   });
 
   pc.onicecandidate = (event) => {
+    console.log("Detected ice event");
     if (event.candidate) {
+      //console.log('ufrag: ' + event.candidate.ufrag)
+
       // Remote description must be set before adding candidates
       if (remoteDescriptionSet == false) {
         candidates.push(event.candidate);
       } else {
+        console.log("Adding candidate");
         c = JSON.stringify(event.candidate);
         pc.addIceCandidate(event.candidate);
         socket.emit("add_icecandidate", c);
       }
-      //console.log("New ICE Candidate:", event.candidate);
     }
-    console.log(candidates)
   };
 
   pc.addEventListener("icegatheringstatechange", function () {
@@ -65,6 +67,7 @@ function addEventListeners() {
   pc.addEventListener("iceconnectionstatechange", function () {
     console.log("iceConnectionState:", pc.iceConnectionState);
     if (pc.iceConnectionState === "failed") {
+      console.log("Ice failed, restarting..");
       pc.restartIce();
     }
   });
@@ -87,12 +90,20 @@ function addIceCandidates() {
    * Function that adds all stored ICE candidates
    * after setting remote description
    */
+  console.log("Adding cached candidates");
   candidates.forEach((candidate) => {
-    console.log('Adding and sending stored candidate: '+ candidate)
-    pc.addIceCandidate(candidate);
-    c = JSON.stringify(candidate);
-    socket.emit("add_icecandidate", c);
+    try {
+      pc.addIceCandidate(candidate);
+      c = JSON.stringify(candidate);
+      console.log("Emitting candidate");
+      socket.emit("add_icecandidate", c);
+    } catch (err) {
+      console.log("Error with ice candidates: " + err);
+    }
+    
   });
+  candidates = [];
+  console.log('All candidates added')
 }
 
 async function start(shoulder_choice) {
@@ -213,7 +224,7 @@ socket.on("answer", function (data) {
   const answer = new RTCSessionDescription(data);
   pc.setRemoteDescription(answer)
     .then(() => {
-      console.log("Remote description set successfully!", answer);
+      console.log("Remote description set successfully!", answer.sdp);
       setRemoteDescription = true;
       addIceCandidates();
     })
