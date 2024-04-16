@@ -19,42 +19,44 @@
   <body class="bg-light bg-gradient">
     <div class="container bg-white">
       <div class="content">
-        <h1>CV Rehab</h1>
+        <div class="text-content">
+          <h1>CV Rehab</h1>
 
-        <h2>Detection</h2>
-        <p id="status">Choose which shoulder to calculate angle on</p>
+          <h2>Detection</h2>
+          <p id="status">Choose which shoulder to calculate angle on</p>
 
-        <div id="switchShoulders">
-          <div class="btn-group btn-group-toggle" data-toggle="buttons">
-            <label class="btn btn-primary">
-              <input
-                type="radio"
-                class="btn-check"
-                name="options"
-                id="left"
-                autocomplete="off"
-                onclick="start(this.id); changeButton(this.id)"
-              />
-              Left
-            </label>
-            <label class="btn btn-primary">
-              <input
-                type="radio"
-                class="btn-check"
-                name="options"
-                id="right"
-                autocomplete="off"
-                onclick="start(this.id); changeButton(this.id)"
-              />
-              Right
-            </label>
+          <div id="switchShoulders">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+              <label class="btn btn-primary">
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="options"
+                  id="left"
+                  autocomplete="off"
+                  onclick="start(this.id); changeButton(this.id)"
+                />
+                Left
+              </label>
+              <label class="btn btn-primary">
+                <input
+                  type="radio"
+                  class="btn-check"
+                  name="options"
+                  id="right"
+                  autocomplete="off"
+                  onclick="start(this.id); changeButton(this.id)"
+                />
+                Right
+              </label>
+            </div>
           </div>
-        </div>
 
-        <br />
-        <div id="connectionStatus">
-          <div id="spinner"></div>
-          <div id="statusText"></div>
+          <br />
+          <div id="connectionStatus">
+            <div id="spinner"></div>
+            <div id="statusText"></div>
+          </div>
         </div>
         <div class="ratio ratio-16x9">
           <video id="remoteVideo" autoplay playsinline></video>

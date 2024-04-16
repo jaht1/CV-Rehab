@@ -11,8 +11,10 @@ body {
 /* Remember to check bootstrap default 
 container styling before editing values */
 .content {
-    padding: 30px !important;
     height: 100%;
+}
+.content .text-content{
+    padding: 30px;
 }
 /*
 .container h1 {
