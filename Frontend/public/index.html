@@ -20,14 +20,33 @@
     <div class="container bg-white">
       <div class="content">
         <div class="text-content">
-          <h1>CV Rehab</h1>
+          <div class="jumbotron">
+            <h1 class="display-4">CV Rehab</h1>
+            <p class="lead">Measure shoulder rotation using Computer Vision.</p>
+            <hr class="my-4" />
 
-          <h2>Detection</h2>
-          <p id="status">Choose which shoulder to calculate angle on</p>
+            <p>
+              <b
+                >The application requires user permission to access the
+                webcam.</b
+              >
+            </p>
+
+            <p>
+              Choose below either the <b>left</b> button to measure the left
+              shoulder, or <b>right</b> button to measure the right shoulder.
+              You will be prompted with a request to use your camera. <br />
+            </p>
+            <p>
+              A text-to-speech countdown from 10 will signal the start of the
+              measurement. <br />The results will be read out loud.
+            </p>
+            <hr class="my-4" />
+          </div>
 
           <div id="switchShoulders">
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
-              <label class="btn btn-primary">
+              <label class="btn btn-primary btn-lg">
                 <input
                   type="radio"
                   class="btn-check"
@@ -38,7 +57,7 @@
                 />
                 Left
               </label>
-              <label class="btn btn-primary">
+              <label class="btn btn-primary btn-lg">
                 <input
                   type="radio"
                   class="btn-check"

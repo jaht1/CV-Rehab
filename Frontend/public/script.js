@@ -1,9 +1,11 @@
-const socket = io("http://localhost:5000");
+const socket = io("localhost:5000");
 
 /* peerconnection variables */
 let pc = null;
 let shoulder = null;
 let detectionStream;
+let remoteDescriptionSet = false;
+let candidates = [];
 // Error logs
 socket.on("connect_error", (err) => {
   console.log(err.message);
@@ -139,6 +141,27 @@ function createOffer() {
         return pc.setLocalDescription(offer);
       })
       .then(function () {
+        // wait for ICE gathering to complete - important!
+        return new Promise(function (resolve) {
+          if (pc.iceGatheringState === "complete") {
+            // if ICE gathering is already complete - resolve immediately
+            resolve();
+          } else {
+            // wait for ice gathering to complete if not already
+            function checkState() {
+              if (pc.iceGatheringState === "complete") {
+                console.log("icegathering complete");
+                // If ICE gathering becomes complete, remove the listener and resolve
+                pc.removeEventListener("icegatheringstatechange", checkState);
+                resolve();
+              }
+            }
+            // event listener for ICE gathering state change
+            pc.addEventListener("icegatheringstatechange", checkState);
+          }
+        });
+      })
+      .then(function () {
         const { sdp, type } = pc.localDescription;
         socket.emit("offer", { sdp, type });
       });
@@ -223,22 +246,48 @@ async function speaking(text) {
   await synthesis.speak(utterance);
 }
 
+/* Countdown */ 
+
+async function measuring(){
+  console.log('Measuring now')
+
+  speaking("Measuring now"); // Wait for speaking to complete
+ 
+  await socket.emit("set_measuring")
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  
+  await socket.emit("get_logs")
+  /*await new Promise(resolve => {
+    setTimeout(() => {
+      socket.emit("set_measuring", () => {
+        resolve(); // Resolve once socket.emit("set_measuring") is done
+      });
+    }, 0); // Ensures that this code runs after the current event loop iteration
+  });
+
+  await socket.emit("get_logs").catch(error => console.error("Error occurred:", error));*/
+   
+}
+
 async function startCountdown() {
   // countdown value
-  let count = 10;
-  speaking("Starting measurement in the count of " + count);
+  let count = 3;
+  
+  await speaking("Starting measurement in the count of " + count);
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  for (let i = count; i > 0; i--) {
-    console.log(i);
-    speaking(i);
-    if (i == 1) {
-      await speaking("Measuring now");
+  const intervalCount = async () => {
+    await speaking(count);
+    console.log(count);
+    count--;
+    if (count === 0){
+      clearInterval(interval);
+      measuring();
     }
-    // Wait inbetween counts - necessary for the voice to speak all counts
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-  socket.emit("get_logs");
+  };
+  
+  const interval = setInterval(intervalCount, 2000);
+
 }
 
 /* Functions for HTML/UI */

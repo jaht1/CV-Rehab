@@ -19,7 +19,7 @@ router = APIRouter()
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 socket_app = socketio.ASGIApp(sio)
 shoulder = ''
-
+measuring_state = False
 relay = MediaRelay()
 
 class VideoTransformTrack(MediaStreamTrack):
@@ -40,7 +40,7 @@ class VideoTransformTrack(MediaStreamTrack):
             
             # Flip image to work as a mirror
             mirrored_frame = cv2.flip(np_frame, 1)
-            processed_frame = analyze_frame(mirrored_frame, shoulder)
+            processed_frame = analyze_frame(mirrored_frame, shoulder, measuring_state)
             # Convert processed numpy array back to VideoFrame
             new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
             # Set time stamps to display frame in real-time
@@ -63,10 +63,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-''''@sio.on('iceCandidate')
-def handle_ice_candidate(candidate):'''
     
+@sio.on('set_measuring')
+async def measuring(sid):
+    global measuring_state
+    measuring_state = True
 
 
 @sio.on('offer')
@@ -82,11 +83,14 @@ async def offer(sid, data):
         sdp = data['sdp']
         
         offer = RTCSessionDescription(sdp=sdp, type=data["type"])
+        
         @pc.on("connectionstatechange")
         def connection():
             print('Connection state: ', pc.connectionState)
             
-
+        '''@pc.on('icecandidate')
+        async def on_ice_candidate(candidate):
+            await print('received a candidate ')'''
         @pc.on("track")    
         def on_track(track):
             try:
@@ -94,13 +98,13 @@ async def offer(sid, data):
                 print(video_track)
                 pc.addTrack(video_track)
             except Exception as e:
-                print('Peerconnection track failed: ', e)
-
-
-        
+                print('Peerconnection track failed: ', e) 
         await pc.setRemoteDescription(offer)
+        print('Added remote description, creating answer')
         # Create an answer
+        
         answer = await pc.createAnswer()
+        print('Answer created')
         # Set the local description
         await pc.setLocalDescription(answer)
         # Send the answer back to the client
@@ -124,6 +128,7 @@ def assign_shoulder(sid, shoulder_choice):
 @sio.on('get_logs')
 async def logs(sid):
     try:
+        
         with open('./Measurements.txt', 'rb') as file:
             lines = file.read().splitlines()
             if lines:
@@ -133,7 +138,8 @@ async def logs(sid):
                 await sio.emit('log', 'Failed to find data')
                 # Return None if the file is empty
                 return None
-        file.close()
+        global measuring_state
+        measuring_state = False
     except Exception as e:
         print('Failed to read file: ', e)
         
@@ -143,11 +149,15 @@ async def logs(sid):
 @sio.on("connect")
 async def connect(sid, env):
     print("New Client Connected to This id : ", str(sid))
+    measuring_state = False
     
 @sio.on("disconnect")
 async def disconnect(sid):
+    global measuring_state
+    measuring_state = False
     print("Client Disconnected: ", str(sid))
     open('./Measurements.txt', 'w').close()
+    
     
     
 
