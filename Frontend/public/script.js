@@ -1,4 +1,6 @@
+
 const socket = io("localhost:5000");
+
 
 /* peerconnection variables */
 let pc = null;
@@ -251,7 +253,7 @@ async function speaking(text) {
 async function measuring(){
   console.log('Measuring now')
 
-  speaking("Measuring now"); // Wait for speaking to complete
+  speaking("Measuring now"); 
  
   await socket.emit("set_measuring")
   await new Promise((resolve) => setTimeout(resolve, 1000));

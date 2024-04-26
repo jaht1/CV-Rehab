@@ -36,6 +36,9 @@ video {
     text-align: center;
 }
 
+.img_guide {
+    width: 300px;
+}
 
 /* Overriding bootstrap's default styling */
 @media (min-width: 500px) {
