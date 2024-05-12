@@ -1,6 +1,4 @@
-
 const socket = io("localhost:5000");
-
 
 /* peerconnection variables */
 let pc = null;
@@ -253,10 +251,10 @@ async function speaking(text) {
 async function measuring(){
   console.log('Measuring now')
 
-  speaking("Measuring now"); 
+  speaking("Measuring now"); // Wait for speaking to complete
  
   await socket.emit("set_measuring")
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   
   await socket.emit("get_logs")
   /*await new Promise(resolve => {
@@ -273,7 +271,7 @@ async function measuring(){
 
 async function startCountdown() {
   // countdown value
-  let count = 3;
+  let count = 10;
   
   await speaking("Starting measurement in the count of " + count);
   await new Promise((resolve) => setTimeout(resolve, 2000));

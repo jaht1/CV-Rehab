@@ -6,9 +6,9 @@ import base64
 import numpy as np
 model = YOLO('yolov8n-pose.pt')  # load an official model
 
-def analyze_frame(frame, shoulder):
+def analyze_frame(frame, shoulder, measuring):
     try:
-        measuring = False
+        #measuring = False
         left = False
         if shoulder == 'left':
             left = True
@@ -61,7 +61,7 @@ def analyze_frame(frame, shoulder):
             return dist
 
 
-        def choose_side(frame, left_wrist, right_wrist):
+        '''def choose_side(frame, left_wrist, right_wrist):
             global left
 
             left_button_pos = [frame.shape[1] - 50, frame.shape[0] - 50]
@@ -74,14 +74,14 @@ def analyze_frame(frame, shoulder):
                 left = True
 
             if get_distance(right_wrist, right_button_pos) < 100:
-                left = False
+                left = False'''
 
-        '''def save_value(value, path):
-            timestamp = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
-            save_data = timestamp + ': ' + value + '\n'
-
+        def save_value(value, path):
+            #timestamp = datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+            #save_data = timestamp + ': ' + value + '\n'
+            shoulder_string = shoulder_string + str(int(angle))+' degrees'
             with open(path, 'a') as file:
-                file.write(save_data)'''
+                file.write(shoulder_string)
 
         def draw_cross(image, center, arm_length, color=(255, 255, 255), thickness=1):
 
@@ -96,7 +96,7 @@ def analyze_frame(frame, shoulder):
 
 
         def draw_and_calculate(frame, hip, shoulder, elbow, wrist, shoulderMidPoint, hipMidPoint):
-            global measuring
+            #global measuring
             global angle
             upper_point = [0, 0]
             lower_point = [0, 0]
@@ -124,7 +124,7 @@ def analyze_frame(frame, shoulder):
 
                 angle = calculate_angle(elbow, shoulder, upper_point, lower_point)                
 
-                measuring = True    
+                #measuring = True    
 
             return angle
 
@@ -135,11 +135,12 @@ def analyze_frame(frame, shoulder):
 
             with open(path, 'a') as file:
                 file.write(save_data)
+            #measuring_state = False
 
         #while cap.isOpened():
         #ret, frame = cap.read()
 
-        measuring = True
+        #measuring = True
         
         '''if not ret:
             break'''
@@ -179,38 +180,28 @@ def analyze_frame(frame, shoulder):
 
         shoulder_string = ''
         
-        if measuring: 
-            if left == True:
-                shoulder_string = 'Left shoulder angle = '
+        
+        if left == True:
+            shoulder_string = 'Left shoulder angle = '
+        
+        if left == False:
+            shoulder_string = 'Right shoulder angle = '
+
+        shoulder_string = shoulder_string + str(int(angle))+' degrees'
+        cv2.putText(frame, shoulder_string, (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)    
+        
+        
+
+        #key = cv2.waitKey(1)
+        
+        if measuring:
+            save_value(shoulder_string, './Measurements.txt')
             
-            if left == False:
-                shoulder_string = 'Right shoulder angle = '
-
-            shoulder_string = shoulder_string + str(int(angle))+' degrees'
-            cv2.putText(frame, shoulder_string, (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)    
-        
-        
-
-        key = cv2.waitKey(1)
-        
-        
-        save_value(shoulder_string, './Measurements.txt')
-
+        #result = shoulder_string + '\n'
         return frame
     except Exception as e:
         print('Something went wrong with the object detection: ', e)
         # Sends frame unprocessed if no angle could be detected to avoid interruptions on output stream
         return frame
-
-def process_frame(frame):
-    '''Function to process frame for sending back to client. Returns frame as bytes. '''
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    # Encode the processed frame as PNG (or another format, if preferred)
-    _, buffer = cv2.imencode('.png', frame)
-    
-    # 'buffer' is already a binary object (numpy array), which can be directly returned
-    # In a web server context, you would send this binary data as the response body
-    return buffer.tobytes()
 
 

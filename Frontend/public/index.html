@@ -27,15 +27,14 @@
       <div class="content">
         <div class="text-content">
           <div class="jumbotron">
-            <h1 class="display-4">CV Rehab</h1>
+            <h1 class="display-4">Shoulder range of motion (ROM) measurement tool</h1>
             <p class="lead">Measure shoulder rotation using Computer Vision.</p>
             <hr class="my-4" />
 
             <p>
-              <b
-                >The application requires user permission to access the web
-                camera.</b
-              >
+              <strong
+                >This website requires access to the user's camera.</strong
+              ><br> 
             </p>
 
             <p></p>
@@ -43,92 +42,93 @@
               <div class="accordion-item">
                 <h2 class="accordion-header" id="instructionsHeader">
                   <button
-                    class="accordion-button collapsed"
+                    class="accordion-button"
                     type="button"
                     data-bs-toggle="collapse"
-                    data-bs-target="#collapseExample"
-                    aria-expanded="false"
-                    aria-controls="collapseExample"
+                    data-bs-target="#collapseInstructions"
+                    aria-expanded="true"
+                    aria-controls="collapseInstructions"
                   >
                     Instructions
                   </button>
                 </h2>
                 <div
-                  id="collapseExample"
-                  class="accordion-collapse collapse"
+                  id="collapseInstructions"
+                  class="accordion-collapse collapse show"
                   aria-labelledby="instructionsHeader"
                   data-bs-parent="#instructions"
                 >
-                  <div class="accordion-body">
-                    <h2 class="card-title">User guide</h2>
-                    <p class="card-text">
-                      Using computer vision technology, this application is designed for measuring shoulder rotation. This user guide instructs you on how to use this application.
-                    </p>
-                    <h4 class="card-title">Choose side</h4>
-                    <p class="card-text">
-                      Choose below the instructions either the
-                      <b>left button</b> to measure the left shoulder, or
-                      <b>right button</b> to measure the right shoulder. A video stream will appear shortly displaying the measurements and 
-                    </p>
+                <div class="accordion-body">
+                  <h2 class="card-title">User guide</h2>
+                  <p class="card-text">
+                    Using computer vision technology, this application is designed for measuring shoulder range of motion and rotation using your camera. This user guide instructs you on how to use this application. <br>
+                    <strong>For optimal results, use this tool in a well lit area.</strong>
+                  </p>
+                  <h4 class="card-title">Choose side</h4>
+                  <p class="card-text">
+                    To get started, choose below the instructions either the
+                    <b>left button</b> to measure the left shoulder, or
+                    <b>right button</b> to measure the right shoulder. Your browser will request permission to use your camera, and granting access is necessary for using this application. A video stream will appear shortly displaying the measurements.
+                  </p>
 
-                    <div class="container-fluid-mx-0">
-                      <div class="row">
-                        <div class="col">
-                          <h4 class="card-title">
-                            Measuring flexion or extension
-                          </h4>
-                        </div>
-                        <div class="col">
-                          <h4 class="card-title">
-                            Measuring abduction or adduction
-                          </h4>
-                        </div>
+                  <div class="container-fluid-mx-0">
+                    
+                    <div class="row">
+                      <div class="col">
+                        <h4 class="card-title">
+                          Measuring flexion or extension
+                        </h4>
                       </div>
-                      <div class="row">
-                        <div class="col">
-                          Position yourself in the center of the video feed.<br />
-                          <strong>
-                            Face left/right side towards the camera</strong
-                          >.
-                        </div>
-                        <div class="col">
-                          Position yourself in the center of the video feed.<br />
-                          <strong>Face towards the camera</strong>.
-                        </div>
-                      </div>
-
-                      <div class="row">
-                        <div class="col">
-                          <img
-                            class="img-fluid img_guide"
-                            src="./media/extension.jpg"
-                            alt="Image of flexion and extension"
-                          />
-                        </div>
-                        <div class="col">
-                          <img
-                            class="img-fluid img_guide"
-                            src="./media/abduction.jpg"
-                            alt="Image of abduction and adduction"
-                          />
-                        </div>
+                      <div class="col">
+                        <h4 class="card-title">
+                          Measuring abduction or adduction
+                        </h4>
                       </div>
                     </div>
-                    <br />
-                    <br />
-                    <h4 class="card-title">Countdown</h4>
+                    <div class="row">
+                      <div class="col">
+                        Position yourself in the center of the video feed.<br />
+                        <strong>
+                          Face left/right side towards the camera</strong
+                        >.
+                      </div>
+                      <div class="col">
+                        Position yourself in the center of the video feed.<br />
+                        <strong>Face towards the camera</strong>.
+                      </div>
+                    </div>
 
-                    <p class="card-text">
-                      A spoken countdown from 10 will signal the start of the
-                      measurement. The results will be read out loud.
-                    </p>
-                    <p class="card-text">
-                      The measurement process can be restarted by selecting the buttons again.
-                    </p>
+                    <div class="row">
+                      <div class="col">
+                        <img
+                          class="img-fluid img_guide"
+                          src="./media/extension.png"
+                          alt="Image of flexion and extension"
+                        />
+                      </div>
+                      <div class="col">
+                        <img
+                          class="img-fluid img_guide"
+                          src="./media/abduction.png"
+                          alt="Image of abduction and adduction"
+                        />
+                      </div>
+                    </div>
                   </div>
-
                   <br />
+                  <br />
+                  <h4 class="card-title">Spoken countdown</h4>
+
+                  <p class="card-text">A spoken countdown from ten (10) will signal the start of the measurement. 
+                    
+                    The results will be read out loud at the end of the countdown.
+                  </p>
+                  <p class="card-text">
+                    The measurement process can be restarted by choosing a side again.
+                  </p>
                 </div>
+
+                <br />
               </div>
             </div>
           </div>
@@ -137,7 +137,7 @@
 
           <div id="switchShoulders">
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
-              <label class="btn btn-primary btn-lg">
+              <label class="btn btn-primary ">
                 <input
                   type="radio"
                   class="btn-check"
@@ -148,7 +148,7 @@
                 />
                 Left
               </label>
-              <label class="btn btn-primary btn-lg">
+              <label class="btn btn-primary ">
                 <input
                   type="radio"
                   class="btn-check"
@@ -168,7 +168,7 @@
             <div id="statusText"></div>
           </div>
         </div>
-        <div class="ratio ratio-16x9">
+        <div class="video_container">
           <video id="remoteVideo" autoplay playsinline></video>
         </div>
       </div>

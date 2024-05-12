@@ -1,6 +1,7 @@
 body {
     width: 100%;
     background-color: black;
+    height: 100%;
 }
 
 #switchShoulders {
@@ -14,12 +15,9 @@ container styling before editing values */
     height: 100%;
 }
 .content .text-content{
-    padding: 30px;
+    padding-top:10px;
+    padding-bottom: 100px;
 }
-/*
-.container h1 {
-    padding-top: 20px;
-}*/
 .videoElement {
     display:none;
 }
@@ -27,9 +25,10 @@ container styling before editing values */
 video {
     display: block;
     margin: 0 auto;
-    /*width: 960px;
-    height: 540px;*/
     text-align: center;
+    width: 100%;
+  height: auto;
+  
 }
 
 #connectionStatus {
@@ -40,9 +39,25 @@ video {
     width: 300px;
 }
 
+.video_container {
+    position: relative;
+    width: 100%; 
+    max-width: 800px; 
+    margin: 0 auto; 
+}
 /* Overriding bootstrap's default styling */
-@media (min-width: 500px) {
+@media (min-width: 600px) {
     body .container {
       max-width: 70%;
     }
+
+
   }
+
+@media (max-width: 600px) {
+body .container {
+    max-width: 100%;
+    }
+
+}
+

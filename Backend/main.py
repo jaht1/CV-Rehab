@@ -39,8 +39,8 @@ class VideoTransformTrack(MediaStreamTrack):
             np_frame = frame.to_ndarray(format="bgr24")
             
             # Flip image to work as a mirror
-            mirrored_frame = cv2.flip(np_frame, 1)
-            processed_frame = analyze_frame(mirrored_frame, shoulder, measuring_state)
+            #mirrored_frame = cv2.flip(np_frame, 1)
+            processed_frame = analyze_frame(np_frame, shoulder, measuring_state)
             # Convert processed numpy array back to VideoFrame
             new_frame = av.VideoFrame.from_ndarray(processed_frame, format="bgr24")
             # Set time stamps to display frame in real-time
@@ -63,6 +63,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+'''def save_value(result):
+    with open('./Measurements.txt', 'a') as file:
+        file.write(result)'''
     
 @sio.on('set_measuring')
 async def measuring(sid):
